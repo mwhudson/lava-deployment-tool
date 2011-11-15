@@ -1,0 +1,3 @@
+lava-server
+lava-dashboard
+lava-celery
