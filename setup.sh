@@ -287,18 +287,18 @@ INSTANCE_WSGI
 
     # uWSGI mount point. For this to work the uWSGI module needs be loaded.
     # XXX: Perhaps we should just load it ourselves here, dunno.
-    <Location /lava-server>
+    <Location /$LAVA_INSTANCE>
         SetHandler              uwsgi-handler
         uWSGISocket             $LAVA_PREFIX/$LAVA_INSTANCE/uwsgi.sock
-        uWSGIForceScriptName    /lava-server
+        uWSGIForceScriptName    /$LAVA_INSTANCE
     </Location>
 
     # Make exceptions for static and media.
     # This allows apache to serve those and offload the application server
-    <Location /lava-server/static>
+    <Location /$LAVA_INSTANCE/static>
         SetHandler      none
     </Location>
-    <Location /lava-server/media>
+    <Location /$LAVA_INSTANCE/media>
         SetHandler      none
     </Location>
 
@@ -332,13 +332,13 @@ case "$1" in
         echo "Doing global setup..."
         global_setup
         echo "Removing instance..."
-        rm_instance foo
+        rm_instance ${2-foo}
         echo "Creating instance..."
-        mk_instance foo
+        mk_instance ${2-foo}
         echo "Done"
         ;;
     upgrade)
-        mk_instance_src foo
-        mk_instance_app foo
+        mk_instance_src ${2-foo}
+        mk_instance_app ${2-foo}
         ;;
 esac
