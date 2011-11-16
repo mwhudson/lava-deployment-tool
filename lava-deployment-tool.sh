@@ -382,7 +382,7 @@ main() {
     fi
     case "$cmd" in
         ^$|help)
-            echo "Usage: lava-deplyoment-tool.sh <command> [options]"
+            echo "Usage: lava-deployment-tool.sh <command> [options]"
             echo
             echo "Key commands:"
             echo "    setup   - prepare machine for LAVA (prerequisites)"
