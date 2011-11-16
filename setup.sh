@@ -24,7 +24,7 @@ global_setup() {
 
 
 global_teardown() {
-    sudo a2dismod uwsgi
+    sudo a2dismod uwsgi || true
     sudo rm -f /usr/lib/apache2/modules/uwsgi.so
     sudo apt-get remove --purge --yes $LAVA_PKG_LIST language-pack-en 
     sudo apt-get autoremove --purge --yes
