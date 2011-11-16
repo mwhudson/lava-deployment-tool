@@ -304,6 +304,12 @@ cmd_setup() {
 }
 
 
+die() {
+    echo "$1"
+    exit -1
+}
+
+
 cmd_install() {
     LAVA_INSTANCE=lava
     LAVA_REQUIREMENT=requirements.txt
@@ -313,12 +319,12 @@ cmd_install() {
         echo "Instance $LAVA_INSTANCE already exists"
         return
     fi
-    install_fs $LAVA_INSTANCE 
-    install_venv $LAVA_INSTANCE 
-    install_database $LAVA_INSTANCE
-    install_web_hosting $LAVA_INSTANCE
-    install_app $LAVA_INSTANCE $LAVA_REQUIREMENT 
-    postinstall_app $LAVA_INSTANCE
+    install_fs $LAVA_INSTANCE || die "Unable to create basic filesystem structure" 
+    install_venv $LAVA_INSTANCE || die "Unable to create virtualenv"
+    install_database $LAVA_INSTANCE || die "Unable to create database"
+    install_web_hosting $LAVA_INSTANCE || die "Unable to create web hosting"
+    install_app $LAVA_INSTANCE $LAVA_REQUIREMENT || die "Unable to create application"
+    postinstall_app $LAVA_INSTANCE || die "Unable to run application postinstall actions"
 }
 
 
