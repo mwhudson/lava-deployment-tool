@@ -54,8 +54,8 @@ rm_instance() {
     sudo rm -f /etc/apache2/sites-available/$LAVA_INSTANCE.conf
     sudo rm -f /etc/apache2/sites-enabled/$LAVA_INSTANCE.conf
     sudo rm -rf $LAVA_INSTANCE
-    sudo -u postgres -c dropdb $LAVA_INSTANCE
-    sudo -u postgres -c dropuser $LAVA_INSTANCE
+    sudo -u postgres dropdb $LAVA_INSTANCE
+    sudo -u postgres dropuser $LAVA_INSTANCE
 }
 
 
