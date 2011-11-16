@@ -328,7 +328,6 @@ UWSGI_INI
 case "$1" in
     --I-know-this-sucks)
         cd $LAVA_PREFIX
-        mkdir global
         echo "Doing global setup..."
         global_setup
         echo "Removing instance..."
