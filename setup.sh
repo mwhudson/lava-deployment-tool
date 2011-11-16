@@ -23,14 +23,6 @@ global_setup() {
 }
 
 
-global_teardown() {
-    sudo a2dismod uwsgi || true
-    sudo rm -f /usr/lib/apache2/modules/uwsgi.so
-    sudo apt-get remove --purge --yes $LAVA_PKG_LIST language-pack-en 
-    sudo apt-get autoremove --purge --yes
-}
-
-
 mk_instance() {
     LAVA_INSTANCE=$1
 
@@ -62,6 +54,8 @@ rm_instance() {
     sudo rm -f /etc/apache2/sites-available/$LAVA_INSTANCE.conf
     sudo rm -f /etc/apache2/sites-enabled/$LAVA_INSTANCE.conf
     sudo rm -rf $LAVA_INSTANCE
+    sudo -u postgres -c dropdb $LAVA_INSTANCE
+    sudo -u postgres -c dropuser $LAVA_INSTANCE
 }
 
 
@@ -217,9 +211,11 @@ mk_instance_uwsgi() {
         --src=$LAVA_INSTANCE/tmp/download/ \
         uwsgi django-debian django-seatbelt
 
-    echo "Building uWSGI apache module..."
-    ( cd $LAVA_INSTANCE/tmp/build && tar zxf ../download/http%3A%2F%2Fprojects.unbit.it%2Fdownloads%2Fuwsgi-latest.tar.gz )
-    ( cd $LAVA_INSTANCE/tmp/build/uwsgi-$LAVA_UWSGI/apache2 && sudo apxs2 -c -i -a mod_uwsgi.c )
+    if [ \! -e /etc/apache2/mods-available/uwsgi.load ]; then
+        echo "Building uWSGI apache module..."
+        ( cd $LAVA_INSTANCE/tmp/build && tar zxf ../download/http%3A%2F%2Fprojects.unbit.it%2Fdownloads%2Fuwsgi-latest.tar.gz )
+        ( cd $LAVA_INSTANCE/tmp/build/uwsgi-$LAVA_UWSGI/apache2 && sudo apxs2 -c -i -a mod_uwsgi.c )
+    fi
 
     echo "Creating WSGI file..."
     cat >$LAVA_INSTANCE/etc/lava-server/lava-server.wsgi <<INSTANCE_WSGI
@@ -333,8 +329,6 @@ case "$1" in
     --I-know-this-sucks)
         cd $LAVA_PREFIX
         mkdir global
-        echo "Doing global tear-down..."
-        global_teardown
         echo "Doing global setup..."
         global_setup
         echo "Removing instance..."
