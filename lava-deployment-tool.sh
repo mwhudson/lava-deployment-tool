@@ -1,52 +1,18 @@
 #!/bin/sh
-# set -x
-set -e
 
-# Configuration
-LAVA_INSTANCE=instance
-LAVA_PREFIX=$(pwd)
+# Global Configuration
+
+# All LAVA instances are created relative to this path
+LAVA_PREFIX=/srv/lava
+# All LAVA uses this python version
 LAVA_PYTHON=python2.6
+# All of LAVA is being served by this uWSGI version
 LAVA_UWSGI=0.9.9.2
-PIP="$LAVA_PYTHON `which pip`"
+# Required system packages
 LAVA_PKG_LIST="python-virtualenv build-essential $LAVA_PYTHON-dev libxml2-dev apache2 apache2-dev postgresql"
 
-
-
-global_setup() {
-    # Install global deps if missing
-    sudo apt-get update
-    # I'm not 100% sure this is needed
-    sudo apt-get install --yes language-pack-en
-    # Use english locale, this is VERY important for postgresql locale settings
-    # XXX: I don't like en_US.UTF-8, is there any POSIX.UTF-8 we could use?
-    LANG=en_US.UTF-8 sudo apt-get install --yes $LAVA_PKG_LIST
-}
-
-
-mk_instance() {
-    LAVA_INSTANCE=$1
-
-    # Sanity checking, ensure that instance does not exist yet
-    if [ -d "$LAVA_INSTANCE" ]; then
-        echo "Instance already exists"
-        return
-    fi
-
-    mkdir -p local
-
-    echo "Setting up directories..."
-    mk_instance_fs $LAVA_INSTANCE 
-    echo "Setting up virtualenv..."
-    mk_instance_venv $LAVA_INSTANCE 
-    echo "Setting up database..."
-    mk_instance_db $LAVA_INSTANCE
-    echo "Setting up source code..."
-    mk_instance_src $LAVA_INSTANCE
-    echo "Intializing the application..."
-    mk_instance_app $LAVA_INSTANCE
-    echo "Setting up uwsgi and web hosting..."
-    mk_instance_uwsgi $LAVA_INSTANCE
-}
+# Helper to run pip
+PIP="$LAVA_PYTHON `which pip`"
 
 
 rm_instance() {
@@ -59,30 +25,25 @@ rm_instance() {
 }
 
 
-mk_instance_app() {
+postinstall_app() {
     LAVA_INSTANCE=$1
 
-    echo "Installing django-debian..."
-    $PIP install --environment=$LAVA_INSTANCE \
-        --src=$LAVA_INSTANCE/tmp/download/ \
-        django-debian 
-
     echo "Synchronizing database..."
-    $LAVA_INSTANCE/bin/lava-server manage \
+    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
         --production \
         --instance=$LAVA_INSTANCE \
         --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
         syncdb --noinput
 
     echo "Running migrations..."
-    $LAVA_INSTANCE/bin/lava-server manage \
+    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
         --production \
         --instance=$LAVA_INSTANCE \
         --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
         migrate --noinput
 
     echo "Building cache of static files..."
-    $LAVA_INSTANCE/bin/lava-server manage \
+    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
         --production \
         --instance=$LAVA_INSTANCE \
         --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
@@ -90,40 +51,40 @@ mk_instance_app() {
 }
 
 
-mk_instance_fs() {
+install_fs() {
     LAVA_INSTANCE=$1
 
     # Create basic directory structure
-    mkdir -p $LAVA_INSTANCE/etc/apache2/sites-available
-    mkdir -p $LAVA_INSTANCE/etc/lava-server/reports
-    mkdir -p $LAVA_INSTANCE/etc/lava-server/views
-    mkdir -p $LAVA_INSTANCE/etc/lava-server/templates
-    mkdir -p $LAVA_INSTANCE/var/lib/lava-server/media
-    mkdir -p $LAVA_INSTANCE/var/lib/lava-server/static
-    mkdir -p $LAVA_INSTANCE/var/www/
-    mkdir -p $LAVA_INSTANCE/var/log/
-    mkdir -p $LAVA_INSTANCE/src
-    mkdir -p $LAVA_INSTANCE/tmp/build
-    mkdir -p $LAVA_INSTANCE/tmp/download
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/apache2/sites-available
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/reports
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/views
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/templates
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/media
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/static
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/www/
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/log/
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/src
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/tmp/build
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/tmp/download
 }
 
 
-mk_instance_venv() {
+install_venv() {
     LAVA_INSTANCE=$1
 
     # Create and enable the virtualenv
-    virtualenv --no-site-packages --distribute $LAVA_INSTANCE -p $LAVA_PYTHON
+    virtualenv --no-site-packages --distribute $LAVA_PREFIX/$LAVA_INSTANCE -p $LAVA_PYTHON
 }
 
 
-mk_instance_db()
+install_database()
 {
     LAVA_INSTANCE=$1
 
     LAVA_PASSWORD=$(dd if=/dev/urandom bs=1 count=128 2>/dev/null | md5sum | cut -d ' ' -f 1)
 
     # Create database configuration file
-    cat >$LAVA_INSTANCE/etc/lava-server/default_database.conf <<DEFAULT_DATABASE_CONF
+    cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/default_database.conf <<DEFAULT_DATABASE_CONF
 dbuser='$LAVA_INSTANCE'
 dbpass='$LAVA_PASSWORD'
 basepath=''
@@ -156,27 +117,25 @@ DEFAULT_DATABASE_CONF
         $LAVA_INSTANCE
 
     # Prepare pip cache
-    export PIP_DOWNLOAD_CACHE=$LAVA_INSTANCE/tmp/download
+    export PIP_DOWNLOAD_CACHE=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download
 
-    echo "Installing database adapter"
-    $PIP install --environment=$LAVA_INSTANCE \
-        --src=$LAVA_INSTANCE/tmp/download/ \
+    $PIP install --environment=$LAVA_PREFIX/$LAVA_INSTANCE \
+        --src=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download/ \
         psycopg2
 }
 
 
-mk_instance_src() {
+install_app() {
     LAVA_INSTANCE=$1
+    LAVA_PREQUIREMENT=$2
 
     # Prepare pip cache
-    export PIP_DOWNLOAD_CACHE=$LAVA_INSTANCE/tmp/download
+    export PIP_DOWNLOAD_CACHE=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download
 
-    echo "Installing LAVA"
-    $PIP install --upgrade --environment=$LAVA_INSTANCE --src=$LAVA_INSTANCE/tmp/download/ --requirement=requirements.txt
+    $PIP install --upgrade --environment=$LAVA_PREFIX/$LAVA_INSTANCE --src=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download/ --requirement=$LAVA_REQUIREMENT
 
-    if [ ! -e $LAVA_INSTANCE/etc/lava-server/settings.conf ]; then
-        echo "Creating initial LAVA settings..."
-        cat >$LAVA_INSTANCE/etc/lava-server/settings.conf <<SETTINGS_CONF
+    if [ ! -e $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/settings.conf ]; then
+        cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/settings.conf <<SETTINGS_CONF
 {
     "DEBUG": false,
     "TEMPLATE_DIRS": [
@@ -200,25 +159,25 @@ fi
 }
 
 
-mk_instance_uwsgi() {
+install_web_hosting() {
     LAVA_INSTANCE=$1
 
     # Prepare pip cache
-    export PIP_DOWNLOAD_CACHE=$LAVA_INSTANCE/tmp/download
+    export PIP_DOWNLOAD_CACHE=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download
 
     echo "Installing uWSGI and other hosting parts..."
-    $PIP install --environment=$LAVA_INSTANCE \
-        --src=$LAVA_INSTANCE/tmp/download/ \
-        uwsgi django-debian django-seatbelt
+    $PIP install --environment=$LAVA_PREFIX/$LAVA_INSTANCE \
+        --src=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download/ \
+        uwsgi django-seatbelt django-debian
 
     if [ \! -e /etc/apache2/mods-available/uwsgi.load ]; then
         echo "Building uWSGI apache module..."
-        ( cd $LAVA_INSTANCE/tmp/build && tar zxf ../download/http%3A%2F%2Fprojects.unbit.it%2Fdownloads%2Fuwsgi-latest.tar.gz )
-        ( cd $LAVA_INSTANCE/tmp/build/uwsgi-$LAVA_UWSGI/apache2 && sudo apxs2 -c -i -a mod_uwsgi.c )
+        ( cd $LAVA_PREFIX/$LAVA_INSTANCE/tmp/build && tar zxf ../download/http%3A%2F%2Fprojects.unbit.it%2Fdownloads%2Fuwsgi-latest.tar.gz )
+        ( cd $LAVA_PREFIX/$LAVA_INSTANCE/tmp/build/uwsgi-$LAVA_UWSGI/apache2 && sudo apxs2 -c -i -a mod_uwsgi.c )
     fi
 
     echo "Creating WSGI file..."
-    cat >$LAVA_INSTANCE/etc/lava-server/lava-server.wsgi <<INSTANCE_WSGI
+    cat $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/lava-server.wsgi <<INSTANCE_WSGI
 # This file was automatically generated by lava-deploy-tool.sh
 import os
 import sys
@@ -268,9 +227,8 @@ application = django.core.handlers.wsgi.WSGIHandler()
 INSTANCE_WSGI
 
     # Create apache2 sitee
-    cat >$LAVA_INSTANCE/etc/apache2/sites-available/lava-server.conf <<INSTANCE_SITE
+    cat $LAVA_PREFIX/$LAVA_INSTANCE/etc/apache2/sites-available/lava-server.conf <<INSTANCE_SITE
 <VirtualHost *:80>
-    # ServerName $LAVA_INSTANCE
     ServerAdmin webmaster@localhost
 
     # Allow serving media, static and other custom files
@@ -306,7 +264,7 @@ INSTANCE_WSGI
 INSTANCE_SITE
 
     # Create uWSGI confguration file
-    cat >$LAVA_INSTANCE/etc/lava-server/uwsgi.ini <<UWSGI_INI
+    cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/uwsgi.ini <<UWSGI_INI
 [uwsgi]
 home = $LAVA_PREFIX/$LAVA_INSTANCE
 socket = $LAVA_PREFIX/$LAVA_INSTANCE/uwsgi.sock
@@ -325,19 +283,91 @@ UWSGI_INI
 }
 
 
-case "$1" in
-    --I-know-this-sucks)
-        cd $LAVA_PREFIX
-        echo "Doing global setup..."
-        global_setup
-        echo "Removing instance..."
-        rm_instance ${2-foo}
-        echo "Creating instance..."
-        mk_instance ${2-foo}
-        echo "Done"
-        ;;
-    upgrade)
-        mk_instance_src ${2-foo}
-        mk_instance_app ${2-foo}
-        ;;
-esac
+cmd_setup() {
+    echo "Welcome to LAVA setup utility"
+    echo "This step will install several packages on your system"
+    echo "Type yes to continue"
+    echo
+    read -p "Do you want to continue: " RESPONSE
+    test "$RESPONSE" = 'yes' || return
+    # Install global deps if missing
+    sudo apt-get update
+    # I'm not 100% sure this is needed
+    sudo apt-get install --yes language-pack-en
+    # Use english locale, this is VERY important for postgresql locale settings
+    # XXX: I don't like en_US.UTF-8, is there any POSIX.UTF-8 we could use?
+    LANG=en_US.UTF-8 sudo apt-get install --yes $LAVA_PKG_LIST
+    # Make prefix writable
+    sudo mkdir -p $LAVA_PREFIX 
+    sudo chown $(whoami):$(whoami) $LAVA_PREFIX 
+    echo "Setup complete, you can now install LAVA"
+}
+
+
+cmd_install() {
+    LAVA_INSTANCE=lava
+    LAVA_REQUIREMENT=requirements.txt
+
+    # Sanity checking, ensure that instance does not exist yet
+    if [ -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
+        echo "Instance $LAVA_INSTANCE already exists"
+        return
+    fi
+    install_fs $LAVA_INSTANCE 
+    install_venv $LAVA_INSTANCE 
+    install_database $LAVA_INSTANCE
+    install_web_hosting $LAVA_INSTANCE
+    install_app $LAVA_INSTANCE $LAVA_REQUIREMENT 
+    postinstall_app $LAVA_INSTANCE
+}
+
+
+cmd_upgrade() {
+    LAVA_INSTANCE=lava
+
+    # Sanity checking, ensure that instance does not exist yet
+    if [ \! -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
+        echo "Instance $LAVA_INSTANCE does not exist"
+        return
+    fi
+    install_app $LAVA_INSTANCE $LAVA_REQUIREMENT 
+    postinstall_app $LAVA_INSTANCE
+}
+
+
+main() {
+    if [ -n "$1" ]; then
+        cmd="$1"
+        shift
+    else
+        cmd=help
+    fi
+    case "$cmd" in
+        ^$|help)
+            echo "Usage: lava-deplyoment-tool.sh <command> [options]"
+            echo
+            echo "Key commands:"
+            echo "    setup   - prepare machine for LAVA (prerequisites)"
+            echo "    install - install LAVA"
+            echo "    upgrade - upgrade LAVA"
+            echo
+            echo "See the README file for instructions"
+            ;;
+        setup)
+            cmd_setup "$@"
+            ;;
+        install)
+            cmd_install "$@"
+            ;;
+        upgrade)
+            cmd_upgrade "$@"
+            ;;
+        *)
+            echo "Unknown command: $cmd, try help"
+            exit 1
+            ;;
+    esac
+}
+
+
+main "$@"

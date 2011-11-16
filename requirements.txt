@@ -1,3 +1,4 @@
 lava-server
 lava-dashboard
 lava-celery
+lava-scheduler
