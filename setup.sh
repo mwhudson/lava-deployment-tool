@@ -7,7 +7,7 @@ LAVA_INSTANCE=instance
 LAVA_PREFIX=$(pwd)
 LAVA_PYTHON=python2.6
 LAVA_UWSGI=0.9.9.2
-
+PIP="$LAVA_PYTHON `which pip`"
 LAVA_PKG_LIST="python-virtualenv build-essential $LAVA_PYTHON-dev libxml2-dev apache2 apache2-dev postgresql"
 
 
@@ -113,7 +113,7 @@ mk_instance_venv() {
     LAVA_INSTANCE=$1
 
     # Create and enable the virtualenv
-    virtualenv --no-site-packages --distribute $LAVA_INSTANCE
+    virtualenv --no-site-packages --distribute $LAVA_INSTANCE -p $LAVA_PYTHON
 }
 
 
@@ -160,7 +160,7 @@ DEFAULT_DATABASE_CONF
     export PIP_DOWNLOAD_CACHE=$LAVA_INSTANCE/tmp/download
 
     echo "Installing database adapter"
-    pip install --environment=$LAVA_INSTANCE \
+    $PIP install --environment=$LAVA_INSTANCE \
         --src=$LAVA_INSTANCE/tmp/download/ \
         psycopg2
 }
@@ -173,7 +173,7 @@ mk_instance_src() {
     export PIP_DOWNLOAD_CACHE=$LAVA_INSTANCE/tmp/download
 
     echo "Installing LAVA"
-    pip install --upgrade --environment=$LAVA_INSTANCE --src=$LAVA_INSTANCE/tmp/download/ --requirement=requirements.txt
+    $PIP install --upgrade --environment=$LAVA_INSTANCE --src=$LAVA_INSTANCE/tmp/download/ --requirement=requirements.txt
 
     if [ ! -e $LAVA_INSTANCE/etc/lava-server/settings.conf ]; then
         echo "Creating initial LAVA settings..."
@@ -208,7 +208,7 @@ mk_instance_uwsgi() {
     export PIP_DOWNLOAD_CACHE=$LAVA_INSTANCE/tmp/download
 
     echo "Installing uWSGI and other hosting parts..."
-    pip install --environment=$LAVA_INSTANCE \
+    $PIP install --environment=$LAVA_INSTANCE \
         --src=$LAVA_INSTANCE/tmp/download/ \
         uwsgi django-debian django-seatbelt
 
