@@ -298,11 +298,11 @@ cmd_setup() {
     echo
     read -p "Do you want to continue: " RESPONSE
     test "$RESPONSE" = 'yes' || return
-    # Install global deps if missing
+    # Install global dependencies if missing
     sudo apt-get update
     # I'm not 100% sure this is needed
     sudo apt-get install --yes language-pack-en
-    # Use english locale, this is VERY important for postgresql locale settings
+    # Use English locale, this is VERY important for PostgreSQL locale settings
     # XXX: I don't like en_US.UTF-8, is there any POSIX.UTF-8 we could use?
     LANG=en_US.UTF-8 sudo apt-get install --yes $LAVA_PKG_LIST
     # Make prefix writable
