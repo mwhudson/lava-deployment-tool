@@ -25,32 +25,6 @@ rm_instance() {
 }
 
 
-postinstall_app() {
-    LAVA_INSTANCE=$1
-
-    echo "Synchronizing database..."
-    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
-        --production \
-        --instance=$LAVA_INSTANCE \
-        --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
-        syncdb --noinput
-
-    echo "Running migrations..."
-    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
-        --production \
-        --instance=$LAVA_INSTANCE \
-        --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
-        migrate --noinput
-
-    echo "Building cache of static files..."
-    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
-        --production \
-        --instance=$LAVA_INSTANCE \
-        --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
-        build_static --noinput --link
-}
-
-
 install_fs() {
     LAVA_INSTANCE=$1
 
@@ -122,40 +96,6 @@ DEFAULT_DATABASE_CONF
     $PIP install --environment=$LAVA_PREFIX/$LAVA_INSTANCE \
         --src=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download/ \
         psycopg2
-}
-
-
-install_app() {
-    LAVA_INSTANCE=$1
-    LAVA_PREQUIREMENT=$2
-
-    # Prepare pip cache
-    export PIP_DOWNLOAD_CACHE=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download
-
-    $PIP install --upgrade --environment=$LAVA_PREFIX/$LAVA_INSTANCE --src=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download/ --requirement=$LAVA_REQUIREMENT
-
-    if [ ! -e $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/settings.conf ]; then
-        cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/settings.conf <<SETTINGS_CONF
-{
-    "DEBUG": false,
-    "TEMPLATE_DIRS": [
-        "$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/templates",
-        "$LAVA_PREFIX/$LAVA_INSTANCE/lib/$LAVA_PYTHON/site-packages/lava_server/templates/"
-    ],
-    "STATICFILES_DIRS": [
-        ["lava-server", "$LAVA_PREFIX/$LAVA_INSTANCE/lib/$LAVA_PYTHON/site-packages/lava_server/htdocs/"]
-    ],
-    "MEDIA_ROOT": "$LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media",
-    "STATIC_ROOT": "$LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/static",
-    "DATAREPORT_DIRS": [
-        "$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/reports"
-    ],
-    "DATAVIEW_DIRS": [
-        "$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/views"
-    ]
-}
-SETTINGS_CONF
-fi
 }
 
 
@@ -280,6 +220,66 @@ UWSGI_INI
     sudo ln -s $LAVA_PREFIX/$LAVA_INSTANCE/etc/apache2/sites-available/lava-server.conf /etc/apache2/sites-available/$LAVA_INSTANCE.conf
 
     sudo a2ensite $LAVA_INSTANCE.conf
+}
+
+
+install_app() {
+    LAVA_INSTANCE=$1
+    LAVA_PREQUIREMENT=$2
+
+    # Prepare pip cache
+    export PIP_DOWNLOAD_CACHE=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download
+
+    $PIP install --upgrade --environment=$LAVA_PREFIX/$LAVA_INSTANCE --src=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download/ --requirement=$LAVA_REQUIREMENT
+
+    if [ ! -e $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/settings.conf ]; then
+        cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/settings.conf <<SETTINGS_CONF
+{
+    "DEBUG": false,
+    "TEMPLATE_DIRS": [
+        "$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/templates",
+        "$LAVA_PREFIX/$LAVA_INSTANCE/lib/$LAVA_PYTHON/site-packages/lava_server/templates/"
+    ],
+    "STATICFILES_DIRS": [
+        ["lava-server", "$LAVA_PREFIX/$LAVA_INSTANCE/lib/$LAVA_PYTHON/site-packages/lava_server/htdocs/"]
+    ],
+    "MEDIA_ROOT": "$LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media",
+    "STATIC_ROOT": "$LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/static",
+    "DATAREPORT_DIRS": [
+        "$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/reports"
+    ],
+    "DATAVIEW_DIRS": [
+        "$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/views"
+    ]
+}
+SETTINGS_CONF
+fi
+}
+
+
+postinstall_app() {
+    LAVA_INSTANCE=$1
+
+    echo "Synchronizing database..."
+    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
+        --production \
+        --instance=$LAVA_INSTANCE \
+        --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
+        syncdb --noinput
+
+    echo "Running migrations..."
+    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
+        --production \
+        --instance=$LAVA_INSTANCE \
+        --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
+        migrate --noinput
+
+    echo "Building cache of static files..."
+    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
+        --production \
+        --instance=$LAVA_INSTANCE \
+        --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
+        build_static --noinput --link
 }
 
 
