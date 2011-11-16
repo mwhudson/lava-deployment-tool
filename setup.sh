@@ -68,6 +68,11 @@ rm_instance() {
 mk_instance_app() {
     LAVA_INSTANCE=$1
 
+    echo "Installing django-debian..."
+    $PIP install --environment=$LAVA_INSTANCE \
+        --src=$LAVA_INSTANCE/tmp/download/ \
+        django-debian 
+
     echo "Synchronizing database..."
     $LAVA_INSTANCE/bin/lava-server manage \
         --production \
