@@ -168,7 +168,7 @@ import django.core.handlers.wsgi
 application = django.core.handlers.wsgi.WSGIHandler()
 INSTANCE_WSGI
 
-    # Create apache2 sitee
+    # Create apache2 site
     cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/apache2/sites-available/lava-server.conf <<INSTANCE_SITE
 <VirtualHost *:80>
     ServerAdmin webmaster@localhost
@@ -208,7 +208,7 @@ INSTANCE_SITE
     echo "Creating symlink for apache site"
     sudo ln -s $LAVA_PREFIX/$LAVA_INSTANCE/etc/apache2/sites-available/lava-server.conf /etc/apache2/sites-available/$LAVA_INSTANCE.conf
 
-    # Create uWSGI confguration file
+    # Create uWSGI configuration file
     cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/uwsgi.ini <<UWSGI_INI
 [uwsgi]
 home = $LAVA_PREFIX/$LAVA_INSTANCE
