@@ -43,17 +43,17 @@ mk_instance() {
     mkdir -p local
 
     echo "Setting up directories..."
-    mk_instance_fs $LAVA_INSTANCE >local/fs.log 2>&1
+    mk_instance_fs $LAVA_INSTANCE 
     echo "Setting up virtualenv..."
-    mk_instance_venv $LAVA_INSTANCE >local/venv.log 2>&1
+    mk_instance_venv $LAVA_INSTANCE 
     echo "Setting up database..."
-    mk_instance_db $LAVA_INSTANCE >local/db.log 2>&1
+    mk_instance_db $LAVA_INSTANCE
     echo "Setting up source code..."
-    mk_instance_src $LAVA_INSTANCE >local/src.log 2>&1
+    mk_instance_src $LAVA_INSTANCE
     echo "Intializing the application..."
-    mk_instance_app $LAVA_INSTANCE >local/app.log 2>&1
+    mk_instance_app $LAVA_INSTANCE
     echo "Setting up uwsgi and web hosting..."
-    mk_instance_uwsgi $LAVA_INSTANCE >local/uwsgi.log 2>&1
+    mk_instance_uwsgi $LAVA_INSTANCE
 }
 
 
@@ -334,9 +334,9 @@ case "$1" in
         cd $LAVA_PREFIX
         mkdir global
         echo "Doing global tear-down..."
-        global_teardown >global/setup.log 2>&1
+        global_teardown
         echo "Doing global setup..."
-        global_setup >global/teardown.log 2>&1
+        global_setup
         echo "Removing instance..."
         rm_instance foo
         echo "Creating instance..."
