@@ -1,0 +1,135 @@
+LAVA Deplyoement Tool
+=====================
+
+LAVA Deployment Tool is meant to assist you setting up LAVA on your machine.
+The tool is suitable for both personal and more "production" installations that
+are expected to perform adequately with more concurrent users. This tool is
+not, however, designed for multi-machine installation, including cloud
+deployment. For that it is likely we will turn to Juju
+(https://juju.ubuntu.com/)
+
+
+Software Requirements
+^^^^^^^^^^^^^^^^^^^^^
+
+This tool should work on all Ubuntu versions starting with Lucid (the 10.04 LTS
+release). With small help it is likely to work on Debian and other derivatives.
+If you'd like to help us with Red Hat derivatives or other distributions feel
+free to contact us at validation@linaro.org.
+
+
+Hardware Requirements
+^^^^^^^^^^^^^^^^^^^^^
+
+A small LAVA instance can be deployed on any modest hardware. We recommend at
+least one 1GB of RAM for runtime activity (this is shared, on a single host,
+among the database server, the application server and the web server). For
+storage please reserve about 20GB for application data, especially if you wish
+to mirror current public LAVA instance used by Linaro. LAVA uses append-only
+models so the storage requirements will grow at about several GB a year.
+
+Before installing
+^^^^^^^^^^^^^^^^^
+
+Before you can create your first LAVA instance (standalone, independent LAVA
+installation) you must install some shared infrastructure on your machine.
+Currently this is the Apache 2 web server, PostgreSQL database server and
+Python (and a few python programs and libraries). Because this installation
+method is not using pre-built packages you will also need development headers
+and a working compiler to build some of the native (C) extensions for python.
+
+This step is largely automated. To perform it run this command:
+
+$ ./lava-deployment-tool setup
+
+This step also prepares file-system places for LAVA. In particular it creates
+/srv/lava/ where all LAVA instances are later stored.
+
+Creating LAVA instance
+^^^^^^^^^^^^^^^^^^^^^^
+
+You can create multiple LAVA instances on a single machine. Being able to do
+so is very valuable for testing and developing LAVA itself. To create a new
+instance run this command:
+
+$ ./lava-deployment-tool install NAME URL-to-requirements
+
+This will create a fresh instance called NAME, the instance will be composed of
+the parts specified in the requirements file (specified by the URL). If the
+requirements file is already present on the local filesystem simple pass its
+pathname. LAVA is modular and the requirements file.
+
+The script produces verbose output, at the end it should say that everything
+went fine.
+
+Backing Up LAVA instance
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+LAVA instances store persistent data in two locations:
+
+ * On the filesystem, in the directory 
+   /srv/lava/$LAVA_INSTANCE/var/lib/lava-server/media
+ * In the PostgreSQL database (the database is named $LAVA_INSTANCE)
+
+Backing up those two items is sufficient to preserve entire system state.  To
+learn about backing up the database please turn to PostgreSQL administration
+manual. Before backing up make sure that LAVA instance is turned off. This
+depends on how your instance is started. If you were using upstart the
+following shell command should turn LAVA off:
+
+$ sudo service lava stop 
+
+Updating LAVA instance
+^^^^^^^^^^^^^^^^^^^^^^
+
+LAVA is released periodically. Currently this is once a month but the release
+cycle becomes more and more fluid and eventually we'd like to release multiple
+tiny changes every day.
+
+Once you installed some LAVA components you can upgrade your installation to a
+more recent release using this deployment tool. There are some important
+upgrade considerations: 
+
+1) Upgrades may alter the database or persistent media files. It is wise to
+perform a full system backup before each upgrade. While we don't anticipate
+catastrophic failures it's better to be safe than sorry. Refer to the previous
+chapter for details.
+
+2) Some database schema changes take a lot of time to finish. We try to
+minimize such changes but as you can install any third-party LAVA extensions we
+cannot predict the overall downtime in such case. For official Linaro releases
+please refer to our monthly release notes that are available at
+http://lava.readthedocs.org/
+
+3) Upgrades may introduce additional dependencies, which will be installed
+automatically. Periodically we make use of additional third party open source
+libraries. Those libraries will be installed for a single LAVA instance
+_only_. Your system libraries are not affected by this step. 
+
+4) Upgrades require network access. If you are behind a firewall or a
+corporate http proxy you may experience failures. Please note that the
+upgrade process does not install components without first downloading all of
+the required pieces so in case of a network failure your current installation
+should not be affected. While typically only HTTP and HTTPS protocols are
+being used at times you may see attempts to connect to native protocols used
+by git, bazaar or mercurial.
+
+5) Upgrading process rebuilds the collection of static assets served by
+Apache. During that moment you may encounter a very brief failure to resolve
+some of the static assets (typically images, cascading style sheets and
+javascript libraries)
+
+To upgrade an existing instance run the following command:
+
+$ ./lava-deployment-tool upgrade NAME URL-to-requirements
+
+Again the NAME and URL-to-requirements have the same meaning as in the
+install command mentioned in preceding chapter. 
+
+Contact and bug reports
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Please report bugs using
+https://bugs.launchpad.net/lava-deployment-tool/+filebug
+
+Feel free to contact us at validation@linaro.org.
