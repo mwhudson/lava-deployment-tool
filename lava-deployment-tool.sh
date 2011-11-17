@@ -339,14 +339,15 @@ cmd_install() {
 
 cmd_upgrade() {
     LAVA_INSTANCE=lava
+    LAVA_REQUIREMENT=requirements.txt
 
     # Sanity checking, ensure that instance does not exist yet
     if [ \! -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
         echo "Instance $LAVA_INSTANCE does not exist"
         return
     fi
-    install_app $LAVA_INSTANCE $LAVA_REQUIREMENT 
-    postinstall_app $LAVA_INSTANCE
+    install_app $LAVA_INSTANCE $LAVA_REQUIREMENT || die "Unable to update application"
+    postinstall_app $LAVA_INSTANCE || die "Unable to run application postinstall actions"
 }
 
 
