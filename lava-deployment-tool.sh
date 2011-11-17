@@ -20,7 +20,8 @@ LAVA_PKG_LIST="python-virtualenv build-essential $LAVA_PYTHON-dev libxml2-dev ap
 # Helper to run pip
 PIP="$LAVA_PYTHON `which pip`"
 
-
+# Current version of setup required by lava (global state)
+export LAVA_SETUP_REQUIRED_VERSION=1
 
 
 install_fs() {
@@ -292,24 +293,113 @@ postinstall_app() {
 
 
 cmd_setup() {
-    echo "Welcome to LAVA setup utility"
-    echo "This step will install several packages on your system"
-    echo "Type yes to continue"
-    echo
-    read -p "Do you want to continue: " RESPONSE
-    test "$RESPONSE" = 'yes' || return
-    # Install global dependencies if missing
-    sudo apt-get update
-    # I'm not 100% sure this is needed
-    sudo apt-get install --yes language-pack-en
-    # Use English locale, this is VERY important for PostgreSQL locale settings
-    # XXX: I don't like en_US.UTF-8, is there any POSIX.UTF-8 we could use?
-    LANG=en_US.UTF-8 sudo apt-get install --yes $LAVA_PKG_LIST
-    # Make prefix writable
-    sudo mkdir -p $LAVA_PREFIX
-    sudo mkdir -p $PIP_DOWNLOAD_CACHE
-    sudo chown -R $(whoami):$(whoami) $LAVA_PREFIX 
-    echo "Setup complete, you can now install LAVA"
+    set -x
+    SETUP_VER=0
+    if [ -e $LAVA_PREFIX/.setup ]; then
+        SETUP_VER=$(cat $LAVA_PREFIX/.setup)
+    fi
+
+
+    if [ $SETUP_VER -lt $LAVA_SETUP_REQUIRED_VERSION ]; then
+        set +x
+        echo "===================="
+        echo "LAVA Deployment Tool"
+        echo "===================="
+        echo
+        echo "System preparation steps:"
+        echo " 1) Installing $LAVA_PKG_LIST"
+        echo " 2) Setting up $LAVA_PREFIX owned by you"
+        echo " 3) Setting up $PIP_DOWNLOAD_CACHE for downloads"
+        echo " 4) Setting up upstart jobs"
+        echo
+        read -p "Type YES to continue: " RESPONSE
+        test "$RESPONSE" = 'YES' || return
+    
+        # Install global dependencies if missing
+        sudo apt-get update
+
+        # I'm not 100% sure this is needed
+        sudo apt-get install --yes language-pack-en
+
+        # Use English locale, this is VERY important for PostgreSQL locale settings
+        # XXX: I don't like en_US.UTF-8, is there any POSIX.UTF-8 we could use?
+        LANG=en_US.UTF-8 sudo apt-get install --yes $LAVA_PKG_LIST
+
+        # Make prefix writable
+        sudo mkdir -p $LAVA_PREFIX
+        sudo chown $(whoami):$(whoami) $LAVA_PREFIX 
+
+        # Make download cache writable
+        sudo mkdir -p $PIP_DOWNLOAD_CACHE
+        sudo chown $(whoami):$(whoami) $PIP_DOWNLOAD_CACHE 
+
+        # Create upstart scripts
+        sudo sh -c "cat >/etc/init/lava.conf" <<LAVA_CONF
+author "Zygmunt Krynicki"
+description "LAVA (abstract task)"
+
+start on runlevel [2345]
+stop on runlevel [06]
+LAVA_CONF
+
+        # Create upstart scripts
+        sudo sh -c "cat >/etc/init/lava-uwsgi-workers.conf" <<LAVA_CONF
+author "Zygmunt Krynicki"
+description "LAVA uWSGI workers"
+
+start on starting lava
+
+task
+
+script
+    for dir in \`ls /srv/lava/\`; do
+        INSTANCE=\`basename \$dir\`
+        if [ -e /srv/lava/\$INSTANCE/etc/lava-server/uwsgi.ini ]; then
+            start lava-uwsgi-instance INSTANCE=\$INSTANCE
+        done
+    done
+end script
+LAVA_CONF
+
+        # Create upstart scripts
+        sudo sh -c "cat >/etc/init/lava-uwsgi-instance.conf" <<LAVA_CONF
+author "Zygmunt Krynicki"
+description "LAVA uWSGI worker"
+
+# Stop if everything is going down
+stop on stopping lava
+
+# We want each worker to respawn if it gets hurt.
+respawn
+
+# Announce workers becoming online
+pre-start script
+   logger "Starting uWSGI worker for LAVA instance \$INSTANCE"
+end script
+
+# Announce workers going away
+post-stop script
+   logger "Stopping uWSGI worker for LAVA instance \$INSTANCE"
+end script
+
+# It seems our workers need a moment to shut down properly
+# The default timeout of five seconds was causing SIGKILL
+kill timeout 30
+
+# This is an instance job, there are many possible workers
+# each with different instance variable.
+instance \$INSTANCE
+
+# Run uWSGI with instance specific configuration file
+exec /srv/lava/\$INSTANCE/bin/uwsgi --ini=/srv/lava/\$INSTANCE/etc/lava-server/uwsgi.ini
+LAVA_CONF
+
+        # Store setup version
+        echo $LAVA_SETUP_REQUIRED_VERSION > $LAVA_PREFIX/.setup
+        echo "Setup complete, you can now install LAVA"
+    else
+        echo "This step has been already performed"
+    fi
 }
 
 
