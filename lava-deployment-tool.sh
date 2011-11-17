@@ -264,7 +264,7 @@ fi
 }
 
 
-postinstal_app() {
+postinstall_app() {
     set -e
     LAVA_INSTANCE=$1
 
