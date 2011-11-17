@@ -21,7 +21,7 @@ LAVA_PKG_LIST="python-virtualenv build-essential $LAVA_PYTHON-dev libxml2-dev ap
 PIP="$LAVA_PYTHON `which pip`"
 
 # Current version of setup required by lava (global state)
-export LAVA_SETUP_REQUIRED_VERSION=1
+export LAVA_SETUP_REQUIRED_VERSION=2
 
 
 install_fs() {
@@ -363,7 +363,7 @@ script
         INSTANCE=\`basename \$dir\`
         if [ -e /srv/lava/\$INSTANCE/etc/lava-server/uwsgi.ini ]; then
             start lava-uwsgi-instance INSTANCE=\$INSTANCE
-        done
+        fi 
     done
 end script
 LAVA_CONF
