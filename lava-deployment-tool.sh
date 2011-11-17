@@ -299,8 +299,8 @@ postinstall_app() {
         --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
         build_static --noinput --link
 
-    echo "Starting LAVA services..."
-    sudo service lava start
+    echo "Starting LAVA uWSGI instance..."
+    sudo start lava-uwsgi-instance INSTANCE=$LAVA_INSTANCE
 }
 
 
