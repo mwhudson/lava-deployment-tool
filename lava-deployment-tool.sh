@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # Global Configuration
 
 # All LAVA instances are created relative to this path
@@ -25,7 +27,6 @@ export LAVA_SETUP_REQUIRED_VERSION=2
 
 
 install_fs() {
-    set -e
     set -x
     LAVA_INSTANCE=$1
 
@@ -41,13 +42,11 @@ install_fs() {
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/run/
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/src
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/tmp/build
-    set +e
     set +x
 }
 
 
 install_venv() {
-    set -e
     LAVA_INSTANCE=$1
 
     # Create and enable the virtualenv
@@ -57,7 +56,6 @@ install_venv() {
 
 install_database()
 {
-    set -e
     set -x
     LAVA_INSTANCE=$1
 
@@ -99,13 +97,11 @@ DEFAULT_DATABASE_CONF
     $PIP install --environment=$LAVA_PREFIX/$LAVA_INSTANCE \
         --src=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download/ \
         psycopg2
-    set +e
     set +x
 }
 
 
 install_web_hosting() {
-    set -e
     set -x
     LAVA_INSTANCE=$1
 
@@ -233,13 +229,11 @@ UWSGI_INI
     sudo a2dissite 000-default || true
     echo "Restarting apache"
     sudo service apache2 restart
-    set +e
     set +x
 }
 
 
 install_app() {
-    set -e
     set -x
     LAVA_INSTANCE=$1
     LAVA_PREQUIREMENT=$2
@@ -269,13 +263,11 @@ install_app() {
 }
 SETTINGS_CONF
 fi
-    set +e
     set +x
 }
 
 
 postinstall_app() {
-    set -e
     LAVA_INSTANCE=$1
 
     echo "Synchronizing database..."
