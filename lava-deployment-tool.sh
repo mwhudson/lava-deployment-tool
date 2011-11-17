@@ -292,7 +292,8 @@ postinstall_app() {
         build_static --noinput --link
 
     echo "Restarting LAVA uWSGI instance..."
-    sudo restart lava-uwsgi-instance INSTANCE=$LAVA_INSTANCE
+    sudo stop lava-uwsgi-instance INSTANCE=$LAVA_INSTANCE || true # in case of upgrades
+    sudo start lava-uwsgi-instance INSTANCE=$LAVA_INSTANCE
 }
 
 
