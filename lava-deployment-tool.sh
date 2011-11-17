@@ -34,10 +34,11 @@ install_fs() {
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/reports
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/views
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/templates
-    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/media
-    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/static
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/www/
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/static
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/log/
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/run/
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/src
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/tmp/build
     set +e
@@ -190,7 +191,7 @@ INSTANCE_WSGI
     # XXX: Perhaps we should just load it ourselves here, dunno.
     <Location /$LAVA_INSTANCE>
         SetHandler              uwsgi-handler
-        uWSGISocket             $LAVA_PREFIX/$LAVA_INSTANCE/uwsgi.sock
+        uWSGISocket             $LAVA_PREFIX/$LAVA_INSTANCE/run/uwsgi.sock
         uWSGIForceScriptName    /$LAVA_INSTANCE
     </Location>
 
@@ -213,7 +214,7 @@ INSTANCE_SITE
     cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/uwsgi.ini <<UWSGI_INI
 [uwsgi]
 home = $LAVA_PREFIX/$LAVA_INSTANCE
-socket = $LAVA_PREFIX/$LAVA_INSTANCE/uwsgi.sock
+socket = $LAVA_PREFIX/$LAVA_INSTANCE/run/uwsgi.sock
 chmod-socket = 666
 chown-socket = www-data
 wsgi-file = $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/lava-server.wsgi
