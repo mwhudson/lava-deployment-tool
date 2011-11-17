@@ -224,6 +224,10 @@ UWSGI_INI
 
     echo "Enabling apache site for this instance site"
     sudo a2ensite $LAVA_INSTANCE.conf
+    echo "Disabling default site if still enabled"
+    sudo a2dissite 000-default || true
+    echo "Restarting apache"
+    sudo service apache2 restart
     set +e
     set +x
 }
@@ -289,6 +293,9 @@ postinstall_app() {
         --instance=$LAVA_INSTANCE \
         --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
         build_static --noinput --link
+
+    echo "Starting LAVA services..."
+    sudo service lava start
 }
 
 
