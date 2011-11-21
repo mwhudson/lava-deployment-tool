@@ -312,42 +312,53 @@ cmd_setup() {
         echo " 1) Installing $LAVA_PKG_LIST"
         echo " 2) Setting up $LAVA_PREFIX owned by you"
         echo " 3) Setting up $PIP_DOWNLOAD_CACHE for downloads"
-        echo " 4) Setting up upstart jobs"
+        echo " 4) Setting up upstart jobs (incuding removal of stale jobs)"
         echo
         read -p "Type YES to continue: " RESPONSE
         test "$RESPONSE" = 'YES' || return
     
-        # Install global dependencies if missing
+        echo "Updating apt cache..."
         sudo apt-get update
 
-        # I'm not 100% sure this is needed
+        echo "Installing english language pack, if needed"
+        # XXX: I'm not 100% sure this is needed
         sudo apt-get install --yes language-pack-en
 
         # Use English locale, this is VERY important for PostgreSQL locale settings
         # XXX: I don't like en_US.UTF-8, is there any POSIX.UTF-8 we could use?
+        echo "Installing essential packages, if needed"
         LANG=en_US.UTF-8 sudo apt-get install --yes $LAVA_PKG_LIST
 
-        # Make prefix writable
+        echo "Creating LAVA filesystem in $LAVA_PREFIX"
         sudo mkdir -p $LAVA_PREFIX
+        echo "Making $(whoami) the owner of that location"
         sudo chown $(whoami):$(whoami) $LAVA_PREFIX 
 
-        # Make download cache writable
+        echo "Creating PIP download cache in $PIP_DOWNLOAD_CACHE and making it writable"
         sudo mkdir -p $PIP_DOWNLOAD_CACHE
         sudo chown $(whoami):$(whoami) $PIP_DOWNLOAD_CACHE 
 
-        # Create upstart scripts
+        echo "Creating upstart script for: lava"
         sudo sh -c "cat >/etc/init/lava.conf" <<LAVA_CONF
 author "Zygmunt Krynicki"
 description "LAVA (abstract task)"
 
 start on runlevel [2345]
 stop on runlevel [06]
+
+pre-start script
+    logger "Staring LAVA (all instances)"
+end script
+
+pre-stop script
+    logger "Stopping LAVA (all instances)"
+end script
 LAVA_CONF
 
-        # Create upstart scripts
-        sudo sh -c "cat >/etc/init/lava-uwsgi-workers.conf" <<LAVA_CONF
+        echo "Creating upstart script for: lava-instances"
+        sudo sh -c "cat >/etc/init/lava-instances.conf" <<LAVA_CONF
 author "Zygmunt Krynicki"
-description "LAVA uWSGI workers"
+description "LAVA (instances)"
 
 start on starting lava
 
@@ -355,45 +366,267 @@ task
 
 script
     for dir in \`ls /srv/lava/\`; do
-        INSTANCE=\`basename \$dir\`
-        if [ -e /srv/lava/\$INSTANCE/etc/lava-server/uwsgi.ini ]; then
-            start lava-uwsgi-instance INSTANCE=\$INSTANCE
+        LAVA_INSTANCE=\`basename \$dir\`
+        if [ -e $LAVA_PREFIX/\$LAVA_INSTANCE/etc/lava-server ]; then
+            start lava-instance LAVA_INSTANCE=\$LAVA_INSTANCE
         fi 
     done
 end script
 LAVA_CONF
 
-        # Create upstart scripts
-        sudo sh -c "cat >/etc/init/lava-uwsgi-instance.conf" <<LAVA_CONF
+        sudo rm -f "/etc/init/lava-uwsgi-workers.conf"
+
+        echo "Creating upstart script for: lava-instance"
+        sudo sh -c "cat >/etc/init/lava-instance.conf" <<LAVA_CONF
+author "Zygmunt Krynicki"
+description "LAVA (instance)"
+
+# Stop when lava is being stopped
+stop on stopping lava
+
+# Use LAVA_INSTANCE to differentiate instances
+instance \$LAVA_INSTANCE
+
+# Export the instance name so that we can use it in other
+# related LAVA jobs.
+export LAVA_INSTANCE
+
+pre-start script
+    logger "LAVA instance (\$LAVA_INSTANCE) starting..."
+end script
+
+post-start script
+    logger "LAVA instance (\$LAVA_INSTANCE) started"
+end script
+
+pre-stop script
+    logger "LAVA instance (\$LAVA_INSTANCE) stopping..."
+end script
+
+post-stop script
+    logger "LAVA instance (\$LAVA_INSTANCE) stopped"
+end script
+LAVA_CONF
+
+        sudo rm -f /etc/init/lava-uwsgi-instance.conf
+
+        echo "Creating upstart script for: lava-instance-uwsgi"
+        sudo sh -c "cat >/etc/init/lava-instance-uwsgi.conf" <<LAVA_CONF
 author "Zygmunt Krynicki"
 description "LAVA uWSGI worker"
 
-# Stop if everything is going down
-stop on stopping lava
+# This is an instance job, there are many possible workers
+# each with different instance variable.
+instance \$LAVA_INSTANCE
+
+# Stop and start along with the rest of the instance
+start on starting lava-instance
+stop on stopping lava-instance
 
 # We want each worker to respawn if it gets hurt.
 respawn
 
-# Announce workers becoming online
+# Announce activity 
 pre-start script
-   logger "Starting uWSGI worker for LAVA instance \$INSTANCE"
+    logger "LAVA instance (\$LAVA_INSTANCE) uWSGI starting..."
 end script
 
-# Announce workers going away
-post-stop script
-   logger "Stopping uWSGI worker for LAVA instance \$INSTANCE"
+post-start script
+    logger "LAVA instance (\$LAVA_INSTANCE) uWSGI started"
 end script
+
+pre-stop script
+    logger "LAVA instance (\$LAVA_INSTANCE) uWSGI stopping..."
+end script
+
+post-stop script
+    logger "LAVA instance (\$LAVA_INSTANCE) uWSGI stopped"
+end script
+
+# uWSGI wants to be killed with SIGQUIT to indicate shutdown
+kill signal SIGQUIT
 
 # It seems our workers need a moment to shut down properly
 # The default timeout of five seconds was causing SIGKILL
 kill timeout 30
 
+# Run uWSGI with instance specific configuration file
+exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/uwsgi --ini=$LAVA_PREFIX/\$LAVA_INSTANCE/etc/lava-server/uwsgi.ini
+LAVA_CONF
+
+        echo "Removing stale upstart file (if needed): lava-celeryd-instance"
+        sudo rm -f /etc/init/lava-celeryd-instance.conf
+
+        echo "Creating upstart script for: lava-instance-celeryd"
+        sudo sh -c "cat >/etc/init/lava-instance-celeryd.conf" <<LAVA_CONF
+author "Zygmunt Krynicki"
+description "LAVA Celery worker"
+
 # This is an instance job, there are many possible workers
 # each with different instance variable.
-instance \$INSTANCE
+instance \$LAVA_INSTANCE
 
-# Run uWSGI with instance specific configuration file
-exec /srv/lava/\$INSTANCE/bin/uwsgi --ini=/srv/lava/\$INSTANCE/etc/lava-server/uwsgi.ini
+# Stop and start along with the rest of the instance
+start on starting lava-instance
+stop on stopping lava-instance
+
+# Respawn the worker if it got hurt
+respawn
+
+# virtualenv setup: we need this and the PATH to make it work
+# FIXME: PATH is broken (seems to be an upstart bug)
+env VIRTUAL_ENV=$LAVA_PREFIX/\$LAVA_INSTANCE
+export VIRTUAL_ENV
+
+# Announce workers becoming online
+pre-start script
+    logger "LAVA instance (\$LAVA_INSTANCE) celery worker starting..."
+end script
+
+post-start script
+    logger "LAVA instance (\$LAVA_INSTANCE) celery worker started"
+end script
+
+pre-stop script
+    logger "LAVA instance (\$LAVA_INSTANCE) celery worker stopping..."
+end script
+
+post-stop script
+    logger "LAVA instance (\$LAVA_INSTANCE) celery worker stopped"
+end script
+
+# Some workers can take a while to exit, this should be enough
+kill timeout 360
+
+# Run celery daemon 
+exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage celeryd --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-celeryd.log --loglevel=info --events
+LAVA_CONF
+
+        echo "Creating upstart script for: lava-instance-celerybeat"
+        sudo sh -c "cat >/etc/init/lava-instance-celerybeat.conf" <<LAVA_CONF
+author "Zygmunt Krynicki"
+description "LAVA Celery Scheduler"
+
+# This is an instance job, there are many possible workers
+# each with different instance variable.
+instance \$LAVA_INSTANCE
+
+# Stop and start along with the rest of the instance
+start on starting lava-instance
+stop on stopping lava-instance
+
+# Respawn the worker if it got hurt
+respawn
+
+# virtualenv setup: we need this and the PATH to make it work
+# FIXME: PATH is broken (seems to be an upstart bug)
+env VIRTUAL_ENV=$LAVA_PREFIX/\$LAVA_INSTANCE
+export VIRTUAL_ENV
+
+# Announce workers becoming online
+pre-start script
+    logger "LAVA instance (\$LAVA_INSTANCE) celery scheduler starting..."
+end script
+
+post-start script
+    logger "LAVA instance (\$LAVA_INSTANCE) celery scheduler started"
+end script
+
+pre-stop script
+    logger "LAVA instance (\$LAVA_INSTANCE) celery scheduler stopping..."
+end script
+
+post-stop script
+    logger "LAVA instance (\$LAVA_INSTANCE) celery scheduler stopped"
+end script
+
+# Run celery beat scheduler 
+exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage celerybeat --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-celerybeat.log --loglevel=info
+LAVA_CONF
+
+        echo "Creating upstart script for: lava-instance-celerycam"
+        sudo sh -c "cat >/etc/init/lava-instance-celerycam.conf" <<LAVA_CONF
+author "Zygmunt Krynicki"
+description "LAVA Celery Camera (worker snapshot service)"
+
+# This is an instance job, there are many possible workers
+# each with different instance variable.
+instance \$LAVA_INSTANCE
+
+# Stop and start along with the rest of the instance
+start on starting lava-instance
+stop on stopping lava-instance
+
+# Respawn the worker if it got hurt
+respawn
+
+# virtualenv setup: we need this and the PATH to make it work
+# FIXME: PATH is broken (seems to be an upstart bug)
+env VIRTUAL_ENV=$LAVA_PREFIX/\$LAVA_INSTANCE
+export VIRTUAL_ENV
+
+# Announce workers becoming online
+pre-start script
+    logger "LAVA instance (\$LAVA_INSTANCE) celery cam starting..."
+end script
+
+post-start script
+    logger "LAVA instance (\$LAVA_INSTANCE) celery cam started"
+end script
+
+pre-stop script
+    logger "LAVA instance (\$LAVA_INSTANCE) celery cam stopping..."
+end script
+
+post-stop script
+    logger "LAVA instance (\$LAVA_INSTANCE) celery cam stopped"
+end script
+
+# Run celery camera 
+exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage celerycam --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-celerycam.log --loglevel=info
+LAVA_CONF
+
+        echo "Creating upstart script for: lava-instance-scheduler"
+        sudo sh -c "cat >/etc/init/lava-instance-scheduler.conf" <<LAVA_CONF
+author "Zygmunt Krynicki"
+description "LAVA Scheduler"
+
+# This is an instance job, there are many possible workers
+# each with different instance variable.
+instance \$LAVA_INSTANCE
+
+# Stop and start along with the rest of the instance
+# FIXME: reenable once ready
+# start on starting lava-instance
+stop on stopping lava-instance
+
+# Respawn the worker if it got hurt
+respawn
+
+# virtualenv setup: we need this and the PATH to make it work
+# FIXME: PATH is broken (seems to be an upstart bug)
+env VIRTUAL_ENV=$LAVA_PREFIX/\$LAVA_INSTANCE
+export VIRTUAL_ENV
+
+# Announce workers becoming online
+pre-start script
+    logger "LAVA instance (\$LAVA_INSTANCE) scheduler starting..."
+end script
+
+post-start script
+    logger "LAVA instance (\$LAVA_INSTANCE) scheduler started"
+end script
+
+pre-stop script
+    logger "LAVA instance (\$LAVA_INSTANCE) scheduler stopping..."
+end script
+
+post-stop script
+    logger "LAVA instance (\$LAVA_INSTANCE) scheduler stopped"
+end script
+
+# Run lava scheduler 
+exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage scheduler --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-scheduler.log --loglevel=info
 LAVA_CONF
 
         # Store setup version
