@@ -34,6 +34,8 @@ install_fs() {
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/templates
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/www/
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media
+    chmod g+w  $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media
+    chgrp www-data  $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/static
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/log/
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/run/
