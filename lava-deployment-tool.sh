@@ -19,9 +19,6 @@ LAVA_UWSGI=0.9.9.2
 # Required system packages
 LAVA_PKG_LIST="python-virtualenv build-essential $LAVA_PYTHON-dev libxml2-dev apache2 apache2-dev postgresql"
 
-# Helper to run pip
-PIP="$LAVA_PYTHON `which pip`"
-
 # Current version of setup required by lava (global state)
 export LAVA_SETUP_REQUIRED_VERSION=2
 
@@ -56,7 +53,6 @@ install_venv() {
 
 install_database()
 {
-    set -x
     LAVA_INSTANCE=$1
 
     LAVA_PASSWORD=$(dd if=/dev/urandom bs=1 count=128 2>/dev/null | md5sum | cut -d ' ' -f 1)
@@ -94,21 +90,20 @@ DEFAULT_DATABASE_CONF
         --no-password \
         $LAVA_INSTANCE
 
-    $PIP install --environment=$LAVA_PREFIX/$LAVA_INSTANCE \
-        --src=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download/ \
-        psycopg2
-    set +x
+    # Install the database adapter
+    . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
+    pip install psycopg2
+    deactivate
 }
 
 
 install_web_hosting() {
-    set -x
     LAVA_INSTANCE=$1
 
     echo "Installing uWSGI and other hosting parts..."
-    $PIP install --environment=$LAVA_PREFIX/$LAVA_INSTANCE \
-        --src=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download/ \
-        uwsgi django-seatbelt django-debian
+    . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
+    pip install uwsgi django-seatbelt django-debian
+    deactivate
 
     if [ \! -e /etc/apache2/mods-available/uwsgi.load ]; then
         echo "Building uWSGI apache module..."
@@ -229,7 +224,6 @@ UWSGI_INI
     sudo a2dissite 000-default || true
     echo "Restarting apache"
     sudo service apache2 restart
-    set +x
 }
 
 
@@ -238,8 +232,9 @@ install_app() {
     LAVA_INSTANCE=$1
     LAVA_PREQUIREMENT=$2
 
-
-    $PIP install --upgrade --environment=$LAVA_PREFIX/$LAVA_INSTANCE --src=$LAVA_PREFIX/$LAVA_INSTANCE/tmp/download/ --requirement=$LAVA_REQUIREMENT
+    . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
+    pip install --upgrade --requirement=$LAVA_REQUIREMENT
+    deactivate
 
     if [ ! -e $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/settings.conf ]; then
         cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/settings.conf <<SETTINGS_CONF
