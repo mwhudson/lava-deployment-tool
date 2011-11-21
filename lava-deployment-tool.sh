@@ -643,8 +643,8 @@ die() {
 
 
 cmd_install() {
-    LAVA_INSTANCE=lava
-    LAVA_REQUIREMENT=requirements.txt
+    LAVA_INSTANCE=${1:-lava}
+    LAVA_REQUIREMENT=${2:-requirements.txt}
 
     # Sanity checking, ensure that instance does not exist yet
     if [ -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
@@ -661,8 +661,8 @@ cmd_install() {
 
 
 cmd_upgrade() {
-    LAVA_INSTANCE=lava
-    LAVA_REQUIREMENT=requirements.txt
+    LAVA_INSTANCE=${1:-lava}
+    LAVA_REQUIREMENT=${2:-requirements.txt}
 
     # Sanity checking, ensure that instance does not exist yet
     if [ \! -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
@@ -675,7 +675,7 @@ cmd_upgrade() {
 
 
 cmd_remove() {
-    LAVA_INSTANCE=lava
+    LAVA_INSTANCE=${1:-lava}
 
     # Sanity checking, ensure that instance exists
     if [ \! -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
