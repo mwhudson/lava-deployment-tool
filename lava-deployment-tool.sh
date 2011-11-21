@@ -215,7 +215,8 @@ master = true
 logto = $LAVA_PREFIX/$LAVA_INSTANCE/var/log/lava-server.log
 logfile-chown = true
 log-master = true
-
+auto-procname = true
+touch-reload = $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/uwsgi.reload
 UWSGI_INI
 
     echo "Enabling apache site for this instance site"
