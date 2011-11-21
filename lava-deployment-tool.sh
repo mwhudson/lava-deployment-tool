@@ -20,11 +20,10 @@ LAVA_UWSGI=0.9.9.2
 LAVA_PKG_LIST="python-virtualenv build-essential $LAVA_PYTHON-dev libxml2-dev apache2 apache2-dev postgresql"
 
 # Current version of setup required by lava (global state)
-export LAVA_SETUP_REQUIRED_VERSION=2
+export LAVA_SETUP_REQUIRED_VERSION=4
 
 
 install_fs() {
-    set -x
     LAVA_INSTANCE=$1
 
     # Create basic directory structure
@@ -41,7 +40,6 @@ install_fs() {
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/run/
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/src
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/tmp/build
-    set +x
 }
 
 
@@ -230,7 +228,6 @@ UWSGI_INI
 
 
 install_app() {
-    set -x
     LAVA_INSTANCE=$1
     LAVA_PREQUIREMENT=$2
 
@@ -260,7 +257,6 @@ install_app() {
 }
 SETTINGS_CONF
 fi
-    set +x
 }
 
 
@@ -295,7 +291,7 @@ postinstall_app() {
 
 
 cmd_setup() {
-    set -x
+    set -e
     SETUP_VER=0
     if [ -e $LAVA_PREFIX/.setup ]; then
         SETUP_VER=$(cat $LAVA_PREFIX/.setup)
@@ -635,6 +631,7 @@ LAVA_CONF
     else
         echo "This step has been already performed"
     fi
+    set +e
 }
 
 
