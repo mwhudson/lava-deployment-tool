@@ -206,6 +206,8 @@ INSTANCE_SITE
     echo "Creating symlink for apache site"
     sudo ln -s $LAVA_PREFIX/$LAVA_INSTANCE/etc/apache2/sites-available/lava-server.conf /etc/apache2/sites-available/$LAVA_INSTANCE.conf
 
+    echo "Touching this file will gracefully restart uWSGI worker for LAVA instance: $LAVA_INSTANCE" > $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/uwsgi.reload
+
     # Create uWSGI configuration file
     cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/uwsgi.ini <<UWSGI_INI
 [uwsgi]
