@@ -21,7 +21,7 @@ LAVA_UWSGI=0.9.9.2
 LAVA_PKG_LIST="python-virtualenv git build-essential $LAVA_PYTHON-dev libxml2-dev apache2 apache2-dev postgresql"
 
 # Current version of setup required by lava (global state)
-export LAVA_SETUP_REQUIRED_VERSION=5
+export LAVA_SETUP_REQUIRED_VERSION=6
 
 
 install_fs() {
@@ -624,8 +624,7 @@ description "LAVA Scheduler"
 instance \$LAVA_INSTANCE
 
 # Stop and start along with the rest of the instance
-# FIXME: reenable once ready
-# start on starting lava-instance
+start on starting lava-instance
 stop on stopping lava-instance
 
 # Respawn the worker if it got hurt
