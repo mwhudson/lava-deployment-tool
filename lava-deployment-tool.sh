@@ -48,6 +48,10 @@ install_venv() {
 
     # Create and enable the virtualenv
     virtualenv --no-site-packages --distribute $LAVA_PREFIX/$LAVA_INSTANCE -p $LAVA_PYTHON
+    . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
+    # Install my version of pip that does not crash on editable bzr branches
+    pip install -e git://github.com/zyga/pip.git#egg=pip
+    deactivate
 }
 
 
