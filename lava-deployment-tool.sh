@@ -242,7 +242,30 @@ install_app() {
     deactivate
 
     if [ ! -e $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/settings.conf ]; then
-        cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/settings.conf <<SETTINGS_CONF
+        if [ -e $LAVA_PREFIX/$LAVA_INSTANCE/src/lava-server ]; then
+            # We're in editable server mode, let's use alternate paths for tempates and static files
+            cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/settings.conf <<SETTINGS_CONF
+{
+    "DEBUG": false,
+    "TEMPLATE_DIRS": [
+        "$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/templates",
+        "$LAVA_PREFIX/$LAVA_INSTANCE/src/lava-server/lava_server/templates/"
+    ],
+    "STATICFILES_DIRS": [
+        ["lava-server", "$LAVA_PREFIX/$LAVA_INSTANCE/src/lava-server/lava_server/htdocs/"]
+    ],
+    "MEDIA_ROOT": "$LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media",
+    "STATIC_ROOT": "$LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/static",
+    "DATAREPORT_DIRS": [
+        "$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/reports"
+    ],
+    "DATAVIEW_DIRS": [
+        "$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/views"
+    ]
+}
+SETTINGS_CONF
+        else
+            cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/settings.conf <<SETTINGS_CONF
 {
     "DEBUG": false,
     "TEMPLATE_DIRS": [
@@ -262,6 +285,7 @@ install_app() {
     ]
 }
 SETTINGS_CONF
+    fi
 fi
 }
 
