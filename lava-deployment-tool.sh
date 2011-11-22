@@ -268,6 +268,16 @@ fi
 postinstall_app() {
     LAVA_INSTANCE=$1
 
+    echo "Building cache of static files..."
+    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
+        --production \
+        --instance=$LAVA_INSTANCE \
+        --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
+        build_static --noinput --link
+
+    echo "Stopping instance for database changes..."
+    sudo stop lava-instance LAVA_INSTANCE=$LAVA_INSTANCE || true # in case of upgrades
+
     echo "Synchronizing database..."
     $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
         --production \
@@ -282,16 +292,8 @@ postinstall_app() {
         --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
         migrate --noinput
 
-    echo "Building cache of static files..."
-    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
-        --production \
-        --instance=$LAVA_INSTANCE \
-        --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
-        build_static --noinput --link
-
-    echo "Restarting LAVA uWSGI instance..."
-    sudo stop lava-uwsgi-instance INSTANCE=$LAVA_INSTANCE || true # in case of upgrades
-    sudo start lava-uwsgi-instance INSTANCE=$LAVA_INSTANCE
+    echo "Restarting LAVA instance..."
+    sudo start lava-instance INSTANCE=$LAVA_INSTANCE
 }
 
 
