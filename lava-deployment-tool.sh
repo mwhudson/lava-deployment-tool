@@ -11,13 +11,14 @@ LAVA_PREFIX=/srv/lava
 export PIP_DOWNLOAD_CACHE=$LAVA_PREFIX/.downloads
 
 # All LAVA uses this python version
-LAVA_PYTHON=python2.6
+LAVA_PYTHON=python2.7
 
 # All of LAVA is being served by this uWSGI version
 LAVA_UWSGI=0.9.9.2
 
 # Required system packages
-LAVA_PKG_LIST="python-virtualenv build-essential $LAVA_PYTHON-dev libxml2-dev apache2 apache2-dev postgresql"
+# FIXME: conditional name for git vs git-core on older systems
+LAVA_PKG_LIST="python-virtualenv git build-essential $LAVA_PYTHON-dev libxml2-dev apache2 apache2-dev postgresql"
 
 # Current version of setup required by lava (global state)
 export LAVA_SETUP_REQUIRED_VERSION=4
