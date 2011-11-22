@@ -21,7 +21,7 @@ LAVA_UWSGI=0.9.9.2
 LAVA_PKG_LIST="python-virtualenv git build-essential $LAVA_PYTHON-dev libxml2-dev apache2 apache2-dev postgresql"
 
 # Current version of setup required by lava (global state)
-export LAVA_SETUP_REQUIRED_VERSION=4
+export LAVA_SETUP_REQUIRED_VERSION=5
 
 
 install_fs() {
@@ -569,7 +569,7 @@ post-stop script
 end script
 
 # Run celery beat scheduler 
-exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage celerybeat --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-celerybeat.log --loglevel=info
+exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage celerybeat --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-celerybeat.log --loglevel=info --pidfile=$LAVA_PREFIX/\$LAVA_INSTANCE/run/lava-celerybeat.pid
 LAVA_CONF
 
         echo "Creating upstart script for: lava-instance-celerycam"
