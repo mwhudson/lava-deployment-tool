@@ -1,0 +1,5 @@
+bzr
+-e bzr+lp:lava-server/next/#egg=lava-server
+-e bzr+lp:lava-dashboard/next/#egg=lava-dashboard
+-e bzr+lp:lava-:celery#egg=lava-celery
+-e bzr+lp:lava-scheduler#egg=lava-scheduler
