@@ -293,7 +293,7 @@ postinstall_app() {
         migrate --noinput
 
     echo "Restarting LAVA instance..."
-    sudo start lava-instance INSTANCE=$LAVA_INSTANCE
+    sudo start lava-instance LAVA_INSTANCE=$LAVA_INSTANCE
 }
 
 
