@@ -16,10 +16,6 @@ LAVA_PYTHON=python2.6
 # All of LAVA is being served by this uWSGI version
 LAVA_UWSGI=0.9.9.2
 
-# Required system packages
-# FIXME: conditional name for git vs git-core on older systems
-LAVA_PKG_LIST="python-virtualenv git build-essential $LAVA_PYTHON-dev libxml2-dev apache2 apache2-dev postgresql rabbitmq-server"
-
 # Current version of setup required by lava (global state)
 export LAVA_SETUP_REQUIRED_VERSION=6
 
@@ -34,10 +30,13 @@ os_check() {
                 lucid)
                     export LAVA_PYTHON=python2.6
                     export LAVA_SUPPORTED=1
+                    # Required system packages
+                    LAVA_PKG_LIST="python-virtualenv git-core build-essential $LAVA_PYTHON-dev libxml2-dev apache2 apache2-dev postgresql rabbitmq-server"
                     ;;
                 oneiric)
                     export LAVA_PYTHON=python2.7
                     export LAVA_SUPPORTED=1
+                    LAVA_PKG_LIST="python-virtualenv git build-essential $LAVA_PYTHON-dev libxml2-dev apache2 apache2-dev postgresql rabbitmq-server"
                     ;;
             esac
             ;;
