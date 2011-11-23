@@ -17,7 +17,7 @@ LAVA_PYTHON=python2.6
 LAVA_UWSGI=0.9.9.2
 
 # Current version of setup required by lava (global state)
-export LAVA_SETUP_REQUIRED_VERSION=7
+export LAVA_SETUP_REQUIRED_VERSION=8
 
 # Check if this installation is supported
 export LAVA_SUPPORTED=0
@@ -496,16 +496,12 @@ post-stop script
 end script
 
 # uWSGI wants to be killed with SIGQUIT to indicate shutdown
-# NOTE: this is not supported on Lucid hence we emulate it with
-# start-stop-daemon in the exec line
+# NOTE: this is not supported on Lucid (upstart is too old)
+# Currently no workaround exists
 # kill signal SIGQUIT
 
-# It seems our workers need a moment to shut down properly
-# The default timeout of five seconds was causing SIGKILL
-kill timeout 30
-
 # Run uWSGI with instance specific configuration file
-exec start-stop-daemon --exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/uwsgi --signal QUIT --start $LAVA_PREFIX/\$LAVA_INSTANCE/bin/uwsgi -- --ini=$LAVA_PREFIX/\$LAVA_INSTANCE/etc/lava-server/uwsgi.ini
+exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/uwsgi --ini=$LAVA_PREFIX/\$LAVA_INSTANCE/etc/lava-server/uwsgi.ini
 LAVA_CONF
 
         echo "Removing stale upstart file (if needed): lava-celeryd-instance"
