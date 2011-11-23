@@ -33,10 +33,11 @@ Before installing
 
 Before you can create your first LAVA instance (standalone, independent LAVA
 installation) you must install some shared infrastructure on your machine.
-Currently this is the Apache 2 web server, PostgreSQL database server and
-Python (and a few python programs and libraries). Because this installation
-method is not using pre-built packages you will also need development headers
-and a working compiler to build some of the native (C) extensions for python.
+Currently this is the Apache 2 web server, PostgreSQL database server, RabbitMQ
+messaging server, and Python (and a few python programs and libraries). Because
+this installation method is not using pre-built packages you will also need
+development headers and a working compiler to build some of the native (C)
+extensions for python.
 
 This step is largely automated. To perform it run this command:
 
