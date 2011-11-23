@@ -31,6 +31,10 @@ os_check() {
     case `lsb_release -i -s` in
         Ubuntu)
             case `lsb_release -c -s` in
+                lucid)
+                    export LAVA_PYTHON=python2.6
+                    export LAVA_SUPPORTED=1
+                    ;;
                 oneiric)
                     export LAVA_PYTHON=python2.7
                     export LAVA_SUPPORTED=1
