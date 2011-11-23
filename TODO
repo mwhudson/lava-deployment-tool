@@ -1,0 +1,11 @@
+Missing features:
+
+ - Backup & Restore
+ - Migration from installation based on our PPA
+ - Creating user accounts for each instance
+
+Bugs:
+ - apart from uwsgi workers everything else runs as root
+ - ownership and permissions of media files are not right (media files are
+   exposed to www-data user which defeats privacy)
+ - network issues (pip) cause the script to fail badly, needs more checks
