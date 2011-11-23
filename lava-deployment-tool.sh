@@ -23,6 +23,25 @@ LAVA_PKG_LIST="python-virtualenv git build-essential $LAVA_PYTHON-dev libxml2-de
 # Current version of setup required by lava (global state)
 export LAVA_SETUP_REQUIRED_VERSION=6
 
+# Check if this installation is supported
+export LAVA_SUPPORTED=0
+
+
+os_check() {
+    case `lsb_release -i -s` in
+        Ubuntu)
+            case `lsb_release -c -s` in
+                oneiric)
+                    export LAVA_PYTHON=python2.7
+                    export LAVA_SUPPORTED=1
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+
+
 
 install_fs() {
     LAVA_INSTANCE=$1
