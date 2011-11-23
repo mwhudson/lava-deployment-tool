@@ -749,6 +749,19 @@ cmd_remove() {
 
 
 main() {
+    os_check
+    if [ $LAVA_SUPPORTED = 0 ]; then
+        echo "LAVA is not supported on this system"
+        echo "------------------------------------"
+        echo "Please report a bug on lava-deployment-tool"
+        echo "https://bugs.launchpad.net/lava-deployment-tool/+filebug"
+        echo
+        echo "Please prvide the following information"
+        echo 
+        lsb_release -a
+        exit 1
+    fi
+
     if [ -n "$1" ]; then
         cmd="$1"
         shift
