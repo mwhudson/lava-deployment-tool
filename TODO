@@ -9,3 +9,5 @@ Bugs:
  - ownership and permissions of media files are not right (media files are
    exposed to www-data user which defeats privacy)
  - network issues (pip) cause the script to fail badly, needs more checks
+ - apache config is broken, we need either sensible defaults and separate
+   vhosts or no vhosts and full customizability (mouting app under any root)
