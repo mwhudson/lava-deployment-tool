@@ -11,7 +11,7 @@ LAVA_PREFIX=/srv/lava
 export PIP_DOWNLOAD_CACHE=$LAVA_PREFIX/.downloads
 
 # All LAVA uses this python version
-LAVA_PYTHON=python2.7
+LAVA_PYTHON=python2.6
 
 # All of LAVA is being served by this uWSGI version
 LAVA_UWSGI=0.9.9.2
