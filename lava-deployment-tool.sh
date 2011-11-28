@@ -17,7 +17,7 @@ LAVA_PYTHON=python2.6
 LAVA_UWSGI=0.9.9.2
 
 # Current version of setup required by lava (global state)
-export LAVA_SETUP_REQUIRED_VERSION=8
+export LAVA_SETUP_REQUIRED_VERSION=15
 
 # Check if this installation is supported
 export LAVA_SUPPORTED=0
@@ -44,43 +44,116 @@ os_check() {
 }
 
 
+install_user() {
+    LAVA_INSTANCE=$1
+    set -e
+    set -x
+
+    logger "Creating system user for LAVA instance $LAVA_INSTANCE"
+    sudo useradd --system --comment "User for LAVA Instance" $LAVA_INSTANCE
+
+    set +x
+    set +e
+}
 
 
 install_fs() {
     LAVA_INSTANCE=$1
+    set -e
+    set -x
 
+    logger "Creating filesystem structure for LAVA instance $LAVA_INSTANCE"
     # Create basic directory structure
+    # Apache site:
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/apache2/sites-available
+    # Dashboard reports
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/reports
+    # Dashboard data views
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/views
+    # Custom templates
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/templates
-    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/www/
-    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media
-    chmod g+w  $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media
-    sudo chgrp www-data $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media
+    # Static file cache
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/static
-    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/log/
-    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/run/
+    # Repository of precious user-generated data (needs backup)
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/media
+    # Celery state 
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-celery
+    # Log files
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/log
+    # Sockets and other runtime stuff
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/run
+    # Source code (used when tracking trunk)
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/src
-    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/tmp/build
+    # Temporary files
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/tmp
+
+    # Allow apache (running as www-data) to read our public web files 
+    sudo chgrp -R www-data $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/
+    sudo chmod -R g+rXs $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/
+    # Allow instance user to read all lava-server settings
+    sudo chgrp -R $LAVA_INSTANCE $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server
+    sudo chmod -R g+rXs $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/
+    # Allow instance to write to media directory
+    sudo chgrp -R $LAVA_INSTANCE $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
+    sudo chmod -R g+rwXs $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
+    # Prevent anyone else from reading from the media directory
+    sudo chmod -R o-rX $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
+    # Allow instance to store lava-celery state 
+    sudo chgrp -R $LAVA_INSTANCE $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-celery/
+    sudo chmod -R g+rwXs $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-celery/
+    # Allow instance user to put stuff in runtime directory
+    # and allow www-data to read from that directory
+    sudo chown -R $LAVA_INSTANCE:www-data $LAVA_PREFIX/$LAVA_INSTANCE/run
+    sudo chmod -R g+rXs $LAVA_PREFIX/$LAVA_INSTANCE/run
+    # Allow instance to log stuff to log directory
+    # Allow users in the adm group to read those logs
+    sudo chown -R $LAVA_INSTANCE:adm $LAVA_PREFIX/$LAVA_INSTANCE/var/log
+    sudo chmod -R g+rXs $LAVA_PREFIX/$LAVA_INSTANCE/var/log
+
+    set +e
+    set +x
 }
 
 
 install_venv() {
     LAVA_INSTANCE=$1
 
+    set -e
+    set -x
+
+    logger "Creating virtualenv using $LAVA_PYTHON for LAVA instance $LAVA_INSTANCE"
+
     # Create and enable the virtualenv
     virtualenv --no-site-packages --distribute $LAVA_PREFIX/$LAVA_INSTANCE -p $LAVA_PYTHON
     . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
+
+    logger "Installing special version of pip for LAVA instance $LAVA_INSTANCE"
+
+    # Commit a pip-sepukku
+    pip uninstall pip --yes
+
+    # Get a special version of pip
+    git clone git://github.com/zyga/pip.git -b develop $LAVA_PREFIX/$LAVA_INSTANCE/src/pip
+
     # Install my version of pip that does not crash on editable bzr branches
-    pip install -e git://github.com/zyga/pip.git#egg=pip
+    ( cd $LAVA_PREFIX/$LAVA_INSTANCE/src/pip && python setup.py install )
+
+    # Stop using virtualenv
     deactivate
+
+    set +e
+    set +x
 }
 
 
 install_database()
 {
     LAVA_INSTANCE=$1
+
+    set -e
+    set -x
+
+    logger "Creating database configuration for LAVA instance $LAVA_INSTANCE"
 
     LAVA_PASSWORD=$(dd if=/dev/urandom bs=1 count=128 2>/dev/null | md5sum | cut -d ' ' -f 1)
 
@@ -118,27 +191,33 @@ DEFAULT_DATABASE_CONF
         $LAVA_INSTANCE
 
     # Install the database adapter
+    logger "Installing database adapter for LAVA instance $LAVA_INSTANCE"
     . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
     pip install psycopg2
+
     deactivate
+    set +e
+    set +x
 }
 
 
 install_web_hosting() {
     LAVA_INSTANCE=$1
+    set -e
+    set -x
 
-    echo "Installing uWSGI and other hosting parts..."
+    logger "Installing uWSGI and other hosting parts for LAVA instance $LAVA_INSTANCE"
+
     . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
     pip install uwsgi django-seatbelt django-debian
     deactivate
 
     if [ \! -e /etc/apache2/mods-available/uwsgi.load ]; then
-        echo "Building uWSGI apache module..."
+        logger "Building uWSGI apache module..."
         ( cd $LAVA_PREFIX/$LAVA_INSTANCE/tmp/build && tar zxf $PIP_DOWNLOAD_CACHE/http%3A%2F%2Fprojects.unbit.it%2Fdownloads%2Fuwsgi-latest.tar.gz )
         ( cd $LAVA_PREFIX/$LAVA_INSTANCE/tmp/build/uwsgi-$LAVA_UWSGI/apache2 && sudo apxs2 -c -i -a mod_uwsgi.c )
     fi
 
-    echo "Creating WSGI file..."
     cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/lava-server.wsgi <<INSTANCE_WSGI
 # This file was automatically generated by lava-deploy-tool.sh
 import os
@@ -192,6 +271,8 @@ INSTANCE_WSGI
     cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/apache2/sites-available/lava-server.conf <<INSTANCE_SITE
 <VirtualHost *:80>
     ServerAdmin webmaster@localhost
+    # FIXME: This place needs your help, you should give each instance a custom server name
+    ServerName `hostname`
 
     # Allow serving media, static and other custom files
     <Directory $LAVA_PREFIX/$LAVA_INSTANCE/var/www>
@@ -203,31 +284,28 @@ INSTANCE_WSGI
 
     # This is a small directory with just the index.html file that tells users
     # about this instance has a link to application pages
-    DocumentRoot        $LAVA_PREFIX/$LAVA_INSTANCE/var/www
+    DocumentRoot        $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/
 
     # uWSGI mount point. For this to work the uWSGI module needs be loaded.
     # XXX: Perhaps we should just load it ourselves here, dunno.
-    <Location /$LAVA_INSTANCE>
+    <Location />
         SetHandler              uwsgi-handler
         uWSGISocket             $LAVA_PREFIX/$LAVA_INSTANCE/run/uwsgi.sock
-        uWSGIForceScriptName    /$LAVA_INSTANCE
     </Location>
 
     # Make exceptions for static and media.
     # This allows apache to serve those and offload the application server
-    <Location /$LAVA_INSTANCE/static>
+    <Location /static>
         SetHandler      none
     </Location>
-    <Location /$LAVA_INSTANCE/media>
-        SetHandler      none
-    </Location>
+    # We don't need media files as those are private in our implementation
 
 </VirtualHost>
 INSTANCE_SITE
 
-    echo "Creating symlink for apache site"
     sudo ln -s $LAVA_PREFIX/$LAVA_INSTANCE/etc/apache2/sites-available/lava-server.conf /etc/apache2/sites-available/$LAVA_INSTANCE.conf
 
+    # Create reload file
     echo "Touching this file will gracefully restart uWSGI worker for LAVA instance: $LAVA_INSTANCE" > $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/uwsgi.reload
 
     # Create uWSGI configuration file
@@ -235,31 +313,31 @@ INSTANCE_SITE
 [uwsgi]
 home = $LAVA_PREFIX/$LAVA_INSTANCE
 socket = $LAVA_PREFIX/$LAVA_INSTANCE/run/uwsgi.sock
-chmod-socket = 666
-chown-socket = www-data
+chmod-socket = 660
 wsgi-file = $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/lava-server.wsgi
-uid = www-data
-gid = www-data
 master = true
-logto = $LAVA_PREFIX/$LAVA_INSTANCE/var/log/lava-server.log
-logfile-chown = true
+workers = 8
+logto = $LAVA_PREFIX/$LAVA_INSTANCE/var/log/lava-uwsgi.log
 log-master = true
 auto-procname = true
 touch-reload = $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/uwsgi.reload
 UWSGI_INI
 
-    echo "Enabling apache site for this instance site"
     sudo a2ensite $LAVA_INSTANCE.conf
-    echo "Disabling default site if still enabled"
     sudo a2dissite 000-default || true
-    echo "Restarting apache"
     sudo service apache2 restart
+
+    set +e
+    set +x
 }
 
 
 install_app() {
     LAVA_INSTANCE=$1
-    LAVA_PREQUIREMENT=$2
+    LAVA_REQUIREMENT=$2
+
+    set -e
+    set -x
 
     . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
     pip install --upgrade --requirement=$LAVA_REQUIREMENT
@@ -278,8 +356,10 @@ install_app() {
     "STATICFILES_DIRS": [
         ["lava-server", "$LAVA_PREFIX/$LAVA_INSTANCE/src/lava-server/lava_server/htdocs/"]
     ],
-    "MEDIA_ROOT": "$LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media",
+    "MEDIA_ROOT": "$LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/media",
     "STATIC_ROOT": "$LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/static",
+    "MEDIA_URL": "/media/",
+    "STATIC_URL": "/static/",
     "DATAREPORT_DIRS": [
         "$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/reports"
     ],
@@ -299,8 +379,10 @@ SETTINGS_CONF
     "STATICFILES_DIRS": [
         ["lava-server", "$LAVA_PREFIX/$LAVA_INSTANCE/lib/$LAVA_PYTHON/site-packages/lava_server/htdocs/"]
     ],
-    "MEDIA_ROOT": "$LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media",
+    "MEDIA_ROOT": "$LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/media",
     "STATIC_ROOT": "$LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/static",
+    "MEDIA_URL": "/media/",
+    "STATIC_URL": "/static/",
     "DATAREPORT_DIRS": [
         "$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/reports"
     ],
@@ -311,38 +393,40 @@ SETTINGS_CONF
 SETTINGS_CONF
     fi
 fi
+    set +e
+    set +x
 }
 
 
-postinstall_app() {
+install_config_app() {
     LAVA_INSTANCE=$1
 
+    set -e
+    set -x
+
+    # Enable virtualenv
+    . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
+
     echo "Building cache of static files..."
-    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
-        --production \
-        --instance=$LAVA_INSTANCE \
-        --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
-        build_static --noinput --link
+    lava-server manage build_static --noinput --link
 
     echo "Stopping instance for database changes..."
     sudo stop lava-instance LAVA_INSTANCE=$LAVA_INSTANCE || true # in case of upgrades
 
     echo "Synchronizing database..."
-    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
-        --production \
-        --instance=$LAVA_INSTANCE \
-        --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
-        syncdb --noinput
+    lava-server manage syncdb --noinput
 
     echo "Running migrations..."
-    $LAVA_PREFIX/$LAVA_INSTANCE/bin/lava-server manage \
-        --production \
-        --instance=$LAVA_INSTANCE \
-        --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf \
-        migrate --noinput
+    lava-server manage migrate --noinput
+
+    # Get out of virtualenv
+    deactivate
 
     echo "Restarting LAVA instance..."
     sudo start lava-instance LAVA_INSTANCE=$LAVA_INSTANCE
+
+    set +e
+    set +x
 }
 
 
@@ -398,12 +482,12 @@ description "LAVA (abstract task)"
 start on runlevel [2345]
 stop on runlevel [06]
 
-pre-start script
-    logger "Staring LAVA (all instances)"
+post-start script
+    logger "Started LAVA (all instances)"
 end script
 
-pre-stop script
-    logger "Stopping LAVA (all instances)"
+post-stop script
+    logger "Stopped LAVA (all instances)"
 end script
 LAVA_CONF
 
@@ -419,7 +503,7 @@ task
 script
     for dir in \`ls /srv/lava/\`; do
         LAVA_INSTANCE=\`basename \$dir\`
-        if [ -e $LAVA_PREFIX/\$LAVA_INSTANCE/etc/lava-server ]; then
+        if [ -e $LAVA_PREFIX/\$LAVA_INSTANCE/etc/lava-server/enabled ]; then
             start lava-instance LAVA_INSTANCE=\$LAVA_INSTANCE
         fi 
     done
@@ -498,10 +582,13 @@ end script
 # uWSGI wants to be killed with SIGQUIT to indicate shutdown
 # NOTE: this is not supported on Lucid (upstart is too old)
 # Currently no workaround exists
-# kill signal SIGQUIT
+kill signal SIGQUIT
 
 # Run uWSGI with instance specific configuration file
-exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/uwsgi --ini=$LAVA_PREFIX/\$LAVA_INSTANCE/etc/lava-server/uwsgi.ini
+script
+. $LAVA_PREFIX/\$LAVA_INSTANCE/bin/activate
+sudo -u \$LAVA_INSTANCE VIRTUAL_ENV=\$VIRTUAL_ENV PATH=\$PATH $LAVA_PREFIX/\$LAVA_INSTANCE/bin/uwsgi --ini=$LAVA_PREFIX/\$LAVA_INSTANCE/etc/lava-server/uwsgi.ini
+end script
 LAVA_CONF
 
         echo "Removing stale upstart file (if needed): lava-celeryd-instance"
@@ -522,11 +609,6 @@ stop on stopping lava-instance
 
 # Respawn the worker if it got hurt
 respawn
-
-# virtualenv setup: we need this and the PATH to make it work
-# FIXME: PATH is broken (seems to be an upstart bug)
-env VIRTUAL_ENV=$LAVA_PREFIX/\$LAVA_INSTANCE
-export VIRTUAL_ENV
 
 # Announce workers becoming online
 pre-start script
@@ -549,7 +631,11 @@ end script
 kill timeout 360
 
 # Run celery daemon 
-exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage celeryd --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-celeryd.log --loglevel=info --events
+script
+. $LAVA_PREFIX/\$LAVA_INSTANCE/bin/activate
+sudo -u \$LAVA_INSTANCE VIRTUAL_ENV=\$VIRTUAL_ENV PATH=\$PATH $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage celeryd --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-celeryd.log --loglevel=info --events
+end script
+
 LAVA_CONF
 
         echo "Creating upstart script for: lava-instance-celerybeat"
@@ -567,11 +653,6 @@ stop on stopping lava-instance
 
 # Respawn the worker if it got hurt
 respawn
-
-# virtualenv setup: we need this and the PATH to make it work
-# FIXME: PATH is broken (seems to be an upstart bug)
-env VIRTUAL_ENV=$LAVA_PREFIX/\$LAVA_INSTANCE
-export VIRTUAL_ENV
 
 # Announce workers becoming online
 pre-start script
@@ -591,7 +672,12 @@ post-stop script
 end script
 
 # Run celery beat scheduler 
-exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage celerybeat --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-celerybeat.log --loglevel=info --pidfile=$LAVA_PREFIX/\$LAVA_INSTANCE/run/lava-celerybeat.pid
+exec sudo -u \$LAVA_INSTANCE $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage celerybeat --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-celerybeat.log --loglevel=info --pidfile=$LAVA_PREFIX/\$LAVA_INSTANCE/run/lava-celerybeat.pid
+
+script
+. $LAVA_PREFIX/\$LAVA_INSTANCE/bin/activate
+sudo -u \$LAVA_INSTANCE VIRTUAL_ENV=\$VIRTUAL_ENV PATH=\$PATH $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage celerybeat --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-celerybeat.log --loglevel=info --pidfile=$LAVA_PREFIX/\$LAVA_INSTANCE/run/lava-celerybeat.pid --schedule=$LAVA_PREFIX/\$LAVA_INSTANCE/var/lib/lava-celery/celerybeat-schedule
+end script
 LAVA_CONF
 
         echo "Creating upstart script for: lava-instance-celerycam"
@@ -609,11 +695,6 @@ stop on stopping lava-instance
 
 # Respawn the worker if it got hurt
 respawn
-
-# virtualenv setup: we need this and the PATH to make it work
-# FIXME: PATH is broken (seems to be an upstart bug)
-env VIRTUAL_ENV=$LAVA_PREFIX/\$LAVA_INSTANCE
-export VIRTUAL_ENV
 
 # Announce workers becoming online
 pre-start script
@@ -633,7 +714,11 @@ post-stop script
 end script
 
 # Run celery camera 
-exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage celerycam --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-celerycam.log --loglevel=info
+script
+. $LAVA_PREFIX/\$LAVA_INSTANCE/bin/activate
+sudo -u \$LAVA_INSTANCE VIRTUAL_ENV=\$VIRTUAL_ENV PATH=\$PATH $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage celerycam --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-celerycam.log --loglevel=info --pidfile=$LAVA_PREFIX/\$LAVA_INSTANCE/run/lava-celerycam.pid
+
+end script
 LAVA_CONF
 
         echo "Creating upstart script for: lava-instance-scheduler"
@@ -651,11 +736,6 @@ stop on stopping lava-instance
 
 # Respawn the worker if it got hurt
 respawn
-
-# virtualenv setup: we need this and the PATH to make it work
-# FIXME: PATH is broken (seems to be an upstart bug)
-env VIRTUAL_ENV=$LAVA_PREFIX/\$LAVA_INSTANCE
-export VIRTUAL_ENV
 
 # Announce workers becoming online
 pre-start script
@@ -675,7 +755,10 @@ post-stop script
 end script
 
 # Run lava scheduler 
-exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage scheduler --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-scheduler.log --loglevel=info
+script
+. $LAVA_PREFIX/\$LAVA_INSTANCE/bin/activate
+sudo -u \$LAVA_INSTANCE VIRTUAL_ENV=\$VIRTUAL_ENV PATH=\$PATH $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage scheduler --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-scheduler.log --loglevel=info
+end script
 LAVA_CONF
 
         # Store setup version
@@ -698,17 +781,23 @@ cmd_install() {
     LAVA_INSTANCE=${1:-lava}
     LAVA_REQUIREMENT=${2:-requirements.txt}
 
+    if [ \! -e $LAVA_REQUIREMENT ]; then
+        wget $LAVA_REQUIREMENT -O remote-requirements.txt || die "Unable to download $LAVA_REQUIREMENT" 
+        LAVA_REQUIREMENT=remote-requirements.txt
+    fi
+
     # Sanity checking, ensure that instance does not exist yet
     if [ -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
         echo "Instance $LAVA_INSTANCE already exists"
         return
     fi
+    install_user $LAVA_INSTANCE || die "Unable to create instance user"
     install_fs $LAVA_INSTANCE || die "Unable to create basic filesystem structure" 
     install_venv $LAVA_INSTANCE || die "Unable to create virtualenv"
     install_database $LAVA_INSTANCE || die "Unable to create database"
     install_web_hosting $LAVA_INSTANCE || die "Unable to create web hosting"
     install_app $LAVA_INSTANCE $LAVA_REQUIREMENT || die "Unable to create application"
-    postinstall_app $LAVA_INSTANCE || die "Unable to run application postinstall actions"
+    install_config_app $LAVA_INSTANCE || die "Unable to run application postinstall actions"
 }
 
 
@@ -716,13 +805,18 @@ cmd_upgrade() {
     LAVA_INSTANCE=${1:-lava}
     LAVA_REQUIREMENT=${2:-requirements.txt}
 
+    if [ \! -e $LAVA_REQUIREMENT ]; then
+        wget $LAVA_REQUIREMENT -O remote-requirements.txt || die "Unable to download $LAVA_REQUIREMENT" 
+        LAVA_REQUIREMENT=remote-requirements.txt
+    fi
+
     # Sanity checking, ensure that instance does not exist yet
     if [ \! -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
         echo "Instance $LAVA_INSTANCE does not exist"
         return
     fi
     install_app $LAVA_INSTANCE $LAVA_REQUIREMENT || die "Unable to update application"
-    postinstall_app $LAVA_INSTANCE || die "Unable to run application postinstall actions"
+    install_config_app $LAVA_INSTANCE || die "Unable to run application postinstall actions"
 }
 
 
@@ -741,11 +835,19 @@ cmd_remove() {
     echo
     read -p "Type DESTROY to continue: " RESPONSE
     test "$RESPONSE" = 'DESTROY' || return
-    sudo rm -f /etc/apache2/sites-available/$LAVA_INSTANCE.conf
-    sudo rm -f /etc/apache2/sites-enabled/$LAVA_INSTANCE.conf
-    sudo rm -rf $LAVA_PREFIX/$LAVA_INSTANCE
+
+    set -e
+    set -x
+    logger "Removing LAVA instance $LAVA_INSTANCE"
+    sudo stop lava-instance LAVA_INSTANCE=$LAVA_INSTANCE || true
+    sudo rm -f /etc/apache2/sites-available/$LAVA_INSTANCE.conf || true
+    sudo rm -f /etc/apache2/sites-enabled/$LAVA_INSTANCE.conf || true
+    sudo rm -rf $LAVA_PREFIX/$LAVA_INSTANCE || true
     sudo -u postgres dropdb $LAVA_INSTANCE || true
     sudo -u postgres dropuser $LAVA_INSTANCE || true
+    sudo userdel $LAVA_INSTANCE || true
+    set +e
+    set +x
 }
 
 
@@ -790,9 +892,10 @@ cmd_backup() {
     tar \
         --create \
         --gzip \
-        --directory $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media/ \
+        --directory $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/ \
         --file $LAVA_INSTANCE.backups/files-$snapshot_id.tar.gz \
         .
+    #   ^ There is a DOT HERE don't remove it
 }
 
 
@@ -841,6 +944,9 @@ main() {
             ;;
         upgrade)
             cmd_upgrade "$@"
+            ;;
+        install_*)
+            $cmd "$@"
             ;;
         *)
             echo "Unknown command: $cmd, try help"

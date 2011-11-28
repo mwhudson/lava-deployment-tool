@@ -127,6 +127,16 @@ $ ./lava-deployment-tool upgrade NAME URL-to-requirements
 Again the NAME and URL-to-requirements have the same meaning as in the
 install command mentioned in preceding chapter. 
 
+
+Anatomy of a LAVA instance
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An instance is composed of several parts:
+
+ - A new system user account called $LAVA_INSTANCE
+ - A directory tree similar to standard unix filesystem rooted
+   in $LAVA_PREFIX/$LAVA_INSTANCE/
+
 Contact and bug reports
 ^^^^^^^^^^^^^^^^^^^^^^^
 
