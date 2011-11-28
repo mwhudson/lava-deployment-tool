@@ -749,6 +749,53 @@ cmd_remove() {
 }
 
 
+cmd_backup() {
+    LAVA_INSTANCE=${1:-lava}
+
+    # Sanity checking, ensure that instance exists
+    if [ \! -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
+        echo "Instance $LAVA_INSTANCE does not exist"
+        return
+    fi
+
+    echo "Are you sure you want to backup instance $LAVA_INSTANCE"
+    echo
+    read -p "Type BACKUP to continue: " RESPONSE
+    test "$RESPONSE" = 'BACKUP' || return
+
+    # Load database configuration
+    . $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/default_database.conf
+
+    # Substitute missing defaults for IP-based connection this works around a bug
+    # in postgresql configuration on default Ubuntu installs and allows us to use
+    # the ~/.pgpass file.
+    test -z "$dbserver" && dbserver=localhost
+    test -z "$dbport" && dbport=5432
+
+    snapshot_id=$(TZ=UTC date +%Y-%m-%dT%H-%M-%SZ)
+
+    mkdir -p "$LAVA_INSTANCE.backups/"
+
+    echo "Creating database snapshot..."
+    PGPASSWORD=$dbpass pg_dump \
+        --no-owner \
+        --format=custom \
+        --host=$dbserver \
+        --port=$dbport \
+        --username=$dbuser \
+        --no-password $dbname \
+        > $LAVA_INSTANCE.backups/database-$snapshot_id.dump
+
+    echo "Creating file repository snapshot..."
+    tar \
+        --create \
+        --gzip \
+        --directory $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/media/ \
+        --file $LAVA_INSTANCE.backups/files-$snapshot_id.tar.gz \
+        .
+}
+
+
 main() {
     os_check
     if [ $LAVA_SUPPORTED = 0 ]; then
@@ -785,6 +832,9 @@ main() {
             ;;
         install)
             cmd_install "$@"
+            ;;
+        backup)
+            cmd_backup "$@"
             ;;
         _remove)
             cmd_remove "$@"
