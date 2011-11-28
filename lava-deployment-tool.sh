@@ -214,8 +214,8 @@ install_web_hosting() {
 
     if [ \! -e /etc/apache2/mods-available/uwsgi.load ]; then
         logger "Building uWSGI apache module..."
-        ( cd $LAVA_PREFIX/$LAVA_INSTANCE/tmp/build && tar zxf $PIP_DOWNLOAD_CACHE/http%3A%2F%2Fprojects.unbit.it%2Fdownloads%2Fuwsgi-latest.tar.gz )
-        ( cd $LAVA_PREFIX/$LAVA_INSTANCE/tmp/build/uwsgi-$LAVA_UWSGI/apache2 && sudo apxs2 -c -i -a mod_uwsgi.c )
+        ( cd $LAVA_PREFIX/$LAVA_INSTANCE/build && tar zxf $PIP_DOWNLOAD_CACHE/http%3A%2F%2Fprojects.unbit.it%2Fdownloads%2Fuwsgi-latest.tar.gz )
+        ( cd $LAVA_PREFIX/$LAVA_INSTANCE/build/uwsgi-$LAVA_UWSGI/apache2 && sudo apxs2 -c -i -a mod_uwsgi.c )
     fi
 
     cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/lava-server.wsgi <<INSTANCE_WSGI
