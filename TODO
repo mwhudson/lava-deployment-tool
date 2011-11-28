@@ -11,3 +11,4 @@ Bugs:
  - network issues (pip) cause the script to fail badly, needs more checks
  - apache config is broken, we need either sensible defaults and separate
    vhosts or no vhosts and full customizability (mouting app under any root)
+ - does not work very well on lucid due to upstart (missing features)
