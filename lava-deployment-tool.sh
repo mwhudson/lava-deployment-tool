@@ -109,6 +109,10 @@ install_fs() {
     # Allow users in the adm group to read those logs
     sudo chown -R $LAVA_INSTANCE:adm $LAVA_PREFIX/$LAVA_INSTANCE/var/log
     sudo chmod -R g+rXs $LAVA_PREFIX/$LAVA_INSTANCE/var/log
+    # Allow instance user to put stuff in temporary directory
+    # Set the sticky and setgid bits there
+    sudo chgrp -R $LAVA_INSTANCE $LAVA_PREFIX/$LAVA_INSTANCE/tmp
+    sudo chmod -R g+rwtXs $LAVA_PREFIX/$LAVA_INSTANCE/tmp
 
     set +e
     set +x
