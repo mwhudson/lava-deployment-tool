@@ -4,4 +4,5 @@ Missing features:
  - Migration from installation based on our PPA
 
 Bugs:
+ - set -e just does not work, all error checking is broken, darn!
  - does not work very well on lucid due to upstart (missing features)
