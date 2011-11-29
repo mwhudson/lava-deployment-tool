@@ -284,7 +284,7 @@ INSTANCE_WSGI
 
     # This is a small directory with just the index.html file that tells users
     # about this instance has a link to application pages
-    DocumentRoot        $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/
+    DocumentRoot        $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server
 
     # uWSGI mount point. For this to work the uWSGI module needs be loaded.
     # XXX: Perhaps we should just load it ourselves here, dunno.
