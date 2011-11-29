@@ -634,6 +634,8 @@ end script
 # Some workers can take a while to exit, this should be enough
 kill timeout 360
 
+kill signal SIGTERM
+
 # Run celery daemon 
 script
 . $LAVA_PREFIX/\$LAVA_INSTANCE/bin/activate
