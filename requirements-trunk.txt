@@ -2,5 +2,6 @@ bzr
 -e bzr+lp:lava-server#egg=lava-server
 -e bzr+lp:lava-dashboard#egg=lava-dashboard
 -e bzr+lp:lava-celery#egg=lava-celery
+-e bzr+lp:lava-vcs#egg=lava-vcs
 -e bzr+lp:lava-scheduler#egg=lava-scheduler
 -e bzr+lp:lava-dispatcher#egg=lava-dispatcher
