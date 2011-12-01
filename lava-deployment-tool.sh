@@ -900,7 +900,7 @@ cmd_backup() {
         --create \
         --gzip \
         --directory $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/ \
-        --file $LAVA_INSTANCE.backups/files-$snapshot_id.tar.gz \
+        --file "$destdir/files.tar.gz" \
         .
     #   ^ There is a DOT HERE don't remove it
 
