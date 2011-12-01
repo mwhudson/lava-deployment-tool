@@ -879,7 +879,6 @@ cmd_restore() {
     db_snapshot="$SNAPSHOT/database.dump"
     files_snapshot="$SNAPSHOT/files.tgz"
 
-
     if [ \! -f "$db_snapshot" -or \! -f "$files_snapshot" ]; then
         echo "$SNAPSHOT does not look like a complete snapshot"
         return
@@ -891,22 +890,10 @@ cmd_restore() {
     read -p "Type RESTORE to continue: " RESPONSE
     test "$RESPONSE" = 'RESTORE' || return
 
-    # Load database configuration
-    . $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/default_database.conf
-
-    # Substitute missing defaults for IP-based connection this works around a bug
-    # in postgresql configuration on default Ubuntu installs and allows us to use
-    # the ~/.pgpass file.
-    test -z "$dbserver" && dbserver=localhost
-    test -z "$dbport" && dbport=5432
-
     set -e
     set -x
 
     sudo -u postgres dropdb \
-        --encoding=UTF-8 \
-        --owner=$LAVA_INSTANCE \
-        --no-password \
         $LAVA_INSTANCE || true
     sudo -u postgres createdb \
         --encoding=UTF-8 \
@@ -926,6 +913,9 @@ cmd_restore() {
         --file "$files_snapshot"
 
     # XXX Fix up ownership here.
+
+    set +e
+    set +x
 
     echo "Done"
 }
