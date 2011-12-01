@@ -876,6 +876,15 @@ cmd_restore() {
         fi
     fi
 
+    db_snapshot="$SNAPSHOT/database.dump"
+    files_snapshot="$SNAPSHOT/files.tgz"
+
+
+    if [ \! -f "$db_snapshot" -or \! -f "$files_snapshot" ]; then
+        echo "$SNAPSHOT does not look like a complete snapshot"
+        return
+    fi
+
     echo "Are you sure you want to restore instance $LAVA_INSTANCE from"
     echo "SNAPSHOT_ID?  This will DESTROY the existing state of $LAVA_INSTANCE"
     echo
@@ -890,6 +899,33 @@ cmd_restore() {
     # the ~/.pgpass file.
     test -z "$dbserver" && dbserver=localhost
     test -z "$dbport" && dbport=5432
+
+    set -e
+    set -x
+
+    sudo -u postgres dropdb \
+        --encoding=UTF-8 \
+        --owner=$LAVA_INSTANCE \
+        --no-password \
+        $LAVA_INSTANCE || true
+    sudo -u postgres createdb \
+        --encoding=UTF-8 \
+        --owner=$LAVA_INSTANCE \
+        --no-password \
+        $LAVA_INSTANCE
+    sudo -u postgres pg_restore \
+        --exit-on-error --no-owner \
+        --role $LAVA_INSTANCE \
+        --dbname $LAVA_INSTANCE \
+        $SNAPSHOT/database.dump > /dev/null
+
+    tar \
+        --extract \
+        --gzip \
+        --directory $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/ \
+        --file "$files_snapshot"
+
+    # XXX Fix up ownership here.
 
     echo "Done"
 }
