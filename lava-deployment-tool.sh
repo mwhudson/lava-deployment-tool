@@ -899,6 +899,8 @@ cmd_backup() {
         --file $LAVA_INSTANCE.backups/files-$snapshot_id.tar.gz \
         .
     #   ^ There is a DOT HERE don't remove it
+
+    echo "Made backup with id: $snapshot_id"
 }
 
 

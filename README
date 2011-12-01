@@ -68,17 +68,45 @@ Backing Up LAVA instance
 
 LAVA instances store persistent data in two locations:
 
- * On the filesystem, in the directory 
+ * On the filesystem, in the directory
    /srv/lava/$LAVA_INSTANCE/var/lib/lava-server/media
  * In the PostgreSQL database (the database is named $LAVA_INSTANCE)
 
-Backing up those two items is sufficient to preserve entire system state.  To
-learn about backing up the database please turn to PostgreSQL administration
-manual. Before backing up make sure that LAVA instance is turned off. This
-depends on how your instance is started. If you were using upstart the
-following shell command should turn LAVA off:
+Backing up those two items is sufficient to preserve entire system
+state.  You can do this by running:
 
-$ sudo service lava stop 
+$ lava-deployment-tool.sh backup $LAVA_INSTANCE
+
+which will create a backup with an ID based on the current date and
+time in a directory named
+"/srv/lava/backups/$LAVA_INSTANCE/$SNAPSHOT_ID/".  You can make
+/srv/lava/backups a symlink to a more appropriate location if you
+want.
+
+Generally before backing up you should make sure that LAVA instance is
+turned off. This depends on how your instance is started. If you were
+using upstart the following shell command should turn LAVA off:
+
+$ sudo service lava stop
+
+If you take a backup while running, you will need to do some manual
+cleanup when you restore from it.
+
+Restoring from backup
+^^^^^^^^^^^^^^^^^^^^^
+
+Running the command
+
+$ lava-deployment-tool.sh restore $LAVA_INSTANCE $SNAPSHOT_ID
+
+will restore the given snapshot of the named instance.  This will
+first erase the database and media files of the named instance, so be
+careful what you type!
+
+You can restore an instance from a backup taked from a distinct
+instance with a command like:
+
+$ lava-deployment-tool.sh restore $TARGET_INSTANCE $SOURCE_INSTANCE/$SNAPSHOT_ID
 
 Updating LAVA instance
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -89,7 +117,7 @@ tiny changes every day.
 
 Once you installed some LAVA components you can upgrade your installation to a
 more recent release using this deployment tool. There are some important
-upgrade considerations: 
+upgrade considerations:
 
 1) Upgrades may alter the database or persistent media files. It is wise to
 perform a full system backup before each upgrade. While we don't anticipate
