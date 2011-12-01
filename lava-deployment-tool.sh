@@ -879,7 +879,11 @@ cmd_backup() {
 
     snapshot_id=$(TZ=UTC date +%Y-%m-%dT%H-%M-%SZ)
 
-    mkdir -p "$LAVA_INSTANCE.backups/"
+    echo "Making backup with id: $snapshot_id"
+
+    destdir="$LAVA_PREFIX/backups/$LAVA_INSTANCE/$snapshot_id"
+
+    mkdir -p "$destdir"
 
     echo "Creating database snapshot..."
     PGPASSWORD=$dbpass pg_dump \
@@ -889,7 +893,7 @@ cmd_backup() {
         --port=$dbport \
         --username=$dbuser \
         --no-password $dbname \
-        > $LAVA_INSTANCE.backups/database-$snapshot_id.dump
+        > "$destdir/database.dump"
 
     echo "Creating file repository snapshot..."
     tar \
@@ -900,7 +904,7 @@ cmd_backup() {
         .
     #   ^ There is a DOT HERE don't remove it
 
-    echo "Made backup with id: $snapshot_id"
+    echo "Done"
 }
 
 
