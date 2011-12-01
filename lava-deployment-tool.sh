@@ -854,6 +854,46 @@ cmd_remove() {
 }
 
 
+cmd_restore() {
+    LAVA_INSTANCE=${1}
+
+    # Sanity checking, ensure that instance exists
+    if [ \! -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
+        echo "Instance $LAVA_INSTANCE does not exist"
+        return
+    fi
+
+    SNAPSHOT_ID=${2}
+
+    if [ -d "$LAVA_PREFIX/backups/$LAVA_INSTANCE/$SNAPSHOT_ID" ]; then
+        SNAPSHOT="$LAVA_PREFIX/backups/$LAVA_INSTANCE/$SNAPSHOT_ID"
+    else
+        if [ -d "$LAVA_PREFIX/backups/$SNAPSHOT_ID" ]; then
+            SNAPSHOT="$LAVA_PREFIX/backups/$SNAPSHOT_ID"
+        else
+            echo "Cannot find snapshot $SNAPSHOT_ID"
+            return
+        fi
+    fi
+
+    echo "Are you sure you want to restore instance $LAVA_INSTANCE from"
+    echo "SNAPSHOT_ID?  This will DESTROY the existing state of $LAVA_INSTANCE"
+    echo
+    read -p "Type RESTORE to continue: " RESPONSE
+    test "$RESPONSE" = 'RESTORE' || return
+
+    # Load database configuration
+    . $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/default_database.conf
+
+    # Substitute missing defaults for IP-based connection this works around a bug
+    # in postgresql configuration on default Ubuntu installs and allows us to use
+    # the ~/.pgpass file.
+    test -z "$dbserver" && dbserver=localhost
+    test -z "$dbport" && dbport=5432
+
+    echo "Done"
+}
+
 cmd_backup() {
     LAVA_INSTANCE=${1:-lava}
 
@@ -907,7 +947,6 @@ cmd_backup() {
     echo "Done"
 }
 
-
 main() {
     os_check
     if [ $LAVA_SUPPORTED = 0 ]; then
@@ -947,6 +986,9 @@ main() {
             ;;
         backup)
             cmd_backup "$@"
+            ;;
+        restore)
+            cmd_restore "$@"
             ;;
         _remove)
             cmd_remove "$@"
