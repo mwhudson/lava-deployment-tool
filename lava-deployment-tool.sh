@@ -890,11 +890,11 @@ cmd_restore() {
     read -p "Type RESTORE to continue: " RESPONSE
     test "$RESPONSE" = 'RESTORE' || return
 
-    set -e
-    set -x
-
     # Load database configuration
     . $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/default_database.conf
+
+    set -e
+    set -x
 
     # Substitute missing defaults for IP-based connection this works around a bug
     # in postgresql configuration on default Ubuntu installs and allows us to use
