@@ -70,9 +70,9 @@ LAVA instances store persistent data in two locations:
 
  * On the filesystem, in the directory
    /srv/lava/$LAVA_INSTANCE/var/lib/lava-server/media
- * In the PostgreSQL database (the database is named $LAVA_INSTANCE)
+ * In a PostgreSQL database in the default cluster named $LAVA_INSTANCE
 
-Backing up those two items is sufficient to preserve entire system
+Backing up those two items is sufficient to preserve the entire system
 state.  You can do this by running:
 
 $ lava-deployment-tool.sh backup $LAVA_INSTANCE
@@ -107,6 +107,11 @@ You can restore an instance from a backup taken from a distinct
 instance with a command like:
 
 $ lava-deployment-tool.sh restore $TARGET_INSTANCE $SOURCE_INSTANCE/$SNAPSHOT_ID
+
+Currently to restore from a backup taken on a different machine, you
+have to put it under /srv/lava/backups, then run an appropriate
+"lava-deployment-tool.sh restore" command (we will hopefully make this
+more natural soon).
 
 You cannot restore to an instance while it is running.
 
@@ -155,8 +160,7 @@ To upgrade an existing instance run the following command:
 $ ./lava-deployment-tool upgrade NAME URL-to-requirements
 
 Again the NAME and URL-to-requirements have the same meaning as in the
-install command mentioned in preceding chapter. 
-
+install command mentioned in preceding chapter.
 
 Anatomy of a LAVA instance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -166,6 +170,17 @@ An instance is composed of several parts:
  - A new system user account called $LAVA_INSTANCE
  - A directory tree similar to standard unix filesystem rooted
    in $LAVA_PREFIX/$LAVA_INSTANCE/
+ - A postgres user and database in the default cluster, both named
+   $LAVA_INSTANCE
+
+A note on Postgres versions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+lava-deployment-tool creates its databases in the default postgres
+cluster (on Ubuntu this is the 'main' cluster of whichever version of
+postgres was installed first).  Using a different version/cluster and
+moving between versions is not technically difficult but not currently
+supported.
 
 Contact and bug reports
 ^^^^^^^^^^^^^^^^^^^^^^^
