@@ -8,7 +8,7 @@ set -e
 LAVA_ROOT=/srv/lava
 
 # All LAVA instances are created relative to this path
-LAVA_PREFIX=/srv/lava
+LAVA_PREFIX=$LAVA_ROOT/instances
 
 # Prepare pip cache
 export PIP_DOWNLOAD_CACHE=$LAVA_PREFIX/.downloads
