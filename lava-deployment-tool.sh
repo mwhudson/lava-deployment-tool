@@ -4,6 +4,9 @@ set -e
 
 # Global Configuration
 
+# Where all LAVA stuff is kept, this is meant to make /srv/lava extensible in the future
+LAVA_ROOT=/srv/lava
+
 # All LAVA instances are created relative to this path
 LAVA_PREFIX=/srv/lava
 
