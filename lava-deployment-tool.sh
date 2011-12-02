@@ -906,7 +906,7 @@ cmd_restore() {
         --dbname $LAVA_INSTANCE \
         $SNAPSHOT/database.dump > /dev/null
 
-    rm -rf $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
+    sudo rm -rf $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
     tar \
         --extract \
@@ -914,7 +914,9 @@ cmd_restore() {
         --directory $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/ \
         --file "$files_snapshot"
 
-    # XXX Fix up ownership here.
+    # Allow instance to write to media directory
+    sudo chgrp -R $LAVA_INSTANCE $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
+    sudo chmod -R g+rwXs $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
 
     set +e
     set +x
