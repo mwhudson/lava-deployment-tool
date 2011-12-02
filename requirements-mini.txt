@@ -1,0 +1,2 @@
+bzr
+-e bzr+lp:lava-server#egg=lava-server
