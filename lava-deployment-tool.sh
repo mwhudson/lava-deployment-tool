@@ -913,6 +913,9 @@ cmd_restore() {
     set -e
     set -x
 
+    # Stop the instance
+    sudo stop lava-instance LAVA_INSTANCE=$LAVA_INSTANCE || true
+
     sudo -u postgres dropdb \
         --port $dbport \
         $dbname || true
