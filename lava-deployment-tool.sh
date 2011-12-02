@@ -877,9 +877,9 @@ cmd_restore() {
     fi
 
     db_snapshot="$SNAPSHOT/database.dump"
-    files_snapshot="$SNAPSHOT/files.tgz"
+    files_snapshot="$SNAPSHOT/files.tar.gz"
 
-    if [ \! -f "$db_snapshot" -or \! -f "$files_snapshot" ]; then
+    if [ \! -f "$db_snapshot" -o \! -f "$files_snapshot" ]; then
         echo "$SNAPSHOT does not look like a complete snapshot"
         return
     fi
@@ -906,6 +906,8 @@ cmd_restore() {
         --dbname $LAVA_INSTANCE \
         $SNAPSHOT/database.dump > /dev/null
 
+    rm -rf $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
     tar \
         --extract \
         --gzip \
