@@ -893,17 +893,34 @@ cmd_restore() {
     set -e
     set -x
 
+    # Load database configuration
+    . $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/default_database.conf
+
+    # Substitute missing defaults for IP-based connection this works around a bug
+    # in postgresql configuration on default Ubuntu installs and allows us to use
+    # the ~/.pgpass file.
+    test -z "$dbport" && dbport=5432
+    test -z "$dbserver" && dbserver=localhost
+
+    if [ "$dbserver" != "localhost" ]; then
+        echo "You can only run restore on the host on which postgres is running"
+        return
+    fi
+
     sudo -u postgres dropdb \
+        --port $dbport \
         $LAVA_INSTANCE || true
     sudo -u postgres createdb \
         --encoding=UTF-8 \
-        --owner=$LAVA_INSTANCE \
+        --owner=$dbuser \
+        --port $dbport \
         --no-password \
-        $LAVA_INSTANCE
+        $dbname
     sudo -u postgres pg_restore \
         --exit-on-error --no-owner \
-        --role $LAVA_INSTANCE \
-        --dbname $LAVA_INSTANCE \
+        --port $dbport \
+        --role $dbuser \
+        --dbname $dbname \
         $SNAPSHOT/database.dump > /dev/null
 
     sudo rm -rf $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
