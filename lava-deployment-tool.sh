@@ -885,7 +885,7 @@ cmd_restore() {
     fi
 
     echo "Are you sure you want to restore instance $LAVA_INSTANCE from"
-    echo "SNAPSHOT_ID?  This will DESTROY the existing state of $LAVA_INSTANCE"
+    echo "$SNAPSHOT_ID?  This will DESTROY the existing state of $LAVA_INSTANCE"
     echo
     read -p "Type RESTORE to continue: " RESPONSE
     test "$RESPONSE" = 'RESTORE' || return
