@@ -10,8 +10,8 @@ LAVA_ROOT=/srv/lava
 # All LAVA instances are created relative to this path
 LAVA_PREFIX=$LAVA_ROOT/instances
 
-# Prepare pip cache
-export PIP_DOWNLOAD_CACHE=$LAVA_PREFIX/.downloads
+# Pip download cache 
+export PIP_DOWNLOAD_CACHE=$LAVA_ROOT/.downloads
 
 # All LAVA uses this python version
 LAVA_PYTHON=python2.6
