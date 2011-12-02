@@ -68,17 +68,52 @@ Backing Up LAVA instance
 
 LAVA instances store persistent data in two locations:
 
- * On the filesystem, in the directory 
+ * On the filesystem, in the directory
    /srv/lava/$LAVA_INSTANCE/var/lib/lava-server/media
- * In the PostgreSQL database (the database is named $LAVA_INSTANCE)
+ * In a PostgreSQL database in the default cluster named $LAVA_INSTANCE
 
-Backing up those two items is sufficient to preserve entire system state.  To
-learn about backing up the database please turn to PostgreSQL administration
-manual. Before backing up make sure that LAVA instance is turned off. This
-depends on how your instance is started. If you were using upstart the
-following shell command should turn LAVA off:
+Backing up those two items is sufficient to preserve the entire system
+state.  You can do this by running:
 
-$ sudo service lava stop 
+$ lava-deployment-tool.sh backup $LAVA_INSTANCE
+
+which will create a backup with an ID based on the current date and
+time in a directory named
+"/srv/lava/backups/$LAVA_INSTANCE/$SNAPSHOT_ID/".  You can make
+/srv/lava/backups a symlink to a more appropriate location if you
+want.
+
+Generally before backing up you should make sure that LAVA instance is
+turned off. This depends on how your instance is started. If you were
+using upstart the following shell command should turn LAVA off:
+
+$ sudo service lava stop
+
+If you take a backup while running, you will need to do some manual
+cleanup when you restore from it.
+
+Restoring from backup
+^^^^^^^^^^^^^^^^^^^^^
+
+Running the command
+
+$ lava-deployment-tool.sh restore $LAVA_INSTANCE $SNAPSHOT_ID
+
+will restore the given snapshot of the named instance.  This will
+first erase the database and media files of the named instance, so be
+careful what you type!
+
+You can restore an instance from a backup taken from a distinct
+instance with a command like:
+
+$ lava-deployment-tool.sh restore $TARGET_INSTANCE $SOURCE_INSTANCE/$SNAPSHOT_ID
+
+Currently to restore from a backup taken on a different machine, you
+have to put it under /srv/lava/backups, then run an appropriate
+"lava-deployment-tool.sh restore" command (we will hopefully make this
+more natural soon).
+
+You cannot restore to an instance while it is running.
 
 Updating LAVA instance
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -89,7 +124,7 @@ tiny changes every day.
 
 Once you installed some LAVA components you can upgrade your installation to a
 more recent release using this deployment tool. There are some important
-upgrade considerations: 
+upgrade considerations:
 
 1) Upgrades may alter the database or persistent media files. It is wise to
 perform a full system backup before each upgrade. While we don't anticipate
@@ -125,8 +160,7 @@ To upgrade an existing instance run the following command:
 $ ./lava-deployment-tool upgrade NAME URL-to-requirements
 
 Again the NAME and URL-to-requirements have the same meaning as in the
-install command mentioned in preceding chapter. 
-
+install command mentioned in preceding chapter.
 
 Anatomy of a LAVA instance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -136,6 +170,17 @@ An instance is composed of several parts:
  - A new system user account called $LAVA_INSTANCE
  - A directory tree similar to standard unix filesystem rooted
    in $LAVA_PREFIX/$LAVA_INSTANCE/
+ - A postgres user and database in the default cluster, both named
+   $LAVA_INSTANCE
+
+A note on Postgres versions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+lava-deployment-tool creates its databases in the default postgres
+cluster (on Ubuntu this is the 'main' cluster of whichever version of
+postgres was installed first).  Using a different version/cluster and
+moving between versions is not technically difficult but not currently
+supported.
 
 Contact and bug reports
 ^^^^^^^^^^^^^^^^^^^^^^^

@@ -854,6 +854,93 @@ cmd_remove() {
 }
 
 
+cmd_restore() {
+    LAVA_INSTANCE=${1}
+
+    # Sanity checking, ensure that instance exists
+    if [ \! -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
+        echo "Instance $LAVA_INSTANCE does not exist"
+        return
+    fi
+
+    SNAPSHOT_ID=${2}
+
+    if [ -d "$LAVA_PREFIX/backups/$LAVA_INSTANCE/$SNAPSHOT_ID" ]; then
+        SNAPSHOT="$LAVA_PREFIX/backups/$LAVA_INSTANCE/$SNAPSHOT_ID"
+    else
+        if [ -d "$LAVA_PREFIX/backups/$SNAPSHOT_ID" ]; then
+            SNAPSHOT="$LAVA_PREFIX/backups/$SNAPSHOT_ID"
+        else
+            echo "Cannot find snapshot $SNAPSHOT_ID"
+            return
+        fi
+    fi
+
+    db_snapshot="$SNAPSHOT/database.dump"
+    files_snapshot="$SNAPSHOT/files.tar.gz"
+
+    if [ \! -f "$db_snapshot" -o \! -f "$files_snapshot" ]; then
+        echo "$SNAPSHOT does not look like a complete snapshot"
+        return
+    fi
+
+    echo "Are you sure you want to restore instance $LAVA_INSTANCE from"
+    echo "$SNAPSHOT_ID?  This will DESTROY the existing state of $LAVA_INSTANCE"
+    echo
+    read -p "Type RESTORE to continue: " RESPONSE
+    test "$RESPONSE" = 'RESTORE' || return
+
+    # Load database configuration
+    . $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/default_database.conf
+
+    # Substitute missing defaults for IP-based connection this works around a bug
+    # in postgresql configuration on default Ubuntu installs and allows us to use
+    # the ~/.pgpass file.
+    test -z "$dbport" && dbport=5432
+    test -z "$dbserver" && dbserver=localhost
+
+    if [ "$dbserver" != "localhost" ]; then
+        echo "You can only run restore on the host on which postgres is running"
+        return
+    fi
+
+    set -e
+    set -x
+
+    sudo -u postgres dropdb \
+        --port $dbport \
+        $dbname || true
+    sudo -u postgres createdb \
+        --encoding=UTF-8 \
+        --owner=$dbuser \
+        --port $dbport \
+        --no-password \
+        $dbname
+    sudo -u postgres pg_restore \
+        --exit-on-error --no-owner \
+        --port $dbport \
+        --role $dbuser \
+        --dbname $dbname \
+        $SNAPSHOT/database.dump > /dev/null
+
+    sudo rm -rf $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
+    tar \
+        --extract \
+        --gzip \
+        --directory $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/ \
+        --file "$files_snapshot"
+
+    # Allow instance to write to media directory
+    sudo chgrp -R $LAVA_INSTANCE $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
+    sudo chmod -R g+rwXs $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
+
+    set +e
+    set +x
+
+    echo "Done"
+}
+
 cmd_backup() {
     LAVA_INSTANCE=${1:-lava}
 
@@ -879,7 +966,14 @@ cmd_backup() {
 
     snapshot_id=$(TZ=UTC date +%Y-%m-%dT%H-%M-%SZ)
 
-    mkdir -p "$LAVA_INSTANCE.backups/"
+    echo "Making backup with id: $snapshot_id"
+
+    destdir="$LAVA_PREFIX/backups/$LAVA_INSTANCE/$snapshot_id"
+
+    mkdir -p "$destdir"
+
+    set -e
+    set -x
 
     echo "Creating database snapshot..."
     PGPASSWORD=$dbpass pg_dump \
@@ -889,18 +983,23 @@ cmd_backup() {
         --port=$dbport \
         --username=$dbuser \
         --no-password $dbname \
-        > $LAVA_INSTANCE.backups/database-$snapshot_id.dump
+        --schema=public \
+        > "$destdir/database.dump"
 
     echo "Creating file repository snapshot..."
     tar \
         --create \
         --gzip \
         --directory $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/ \
-        --file $LAVA_INSTANCE.backups/files-$snapshot_id.tar.gz \
+        --file "$destdir/files.tar.gz" \
         .
     #   ^ There is a DOT HERE don't remove it
-}
 
+    set +e
+    set +x
+
+    echo "Done"
+}
 
 main() {
     os_check
@@ -941,6 +1040,9 @@ main() {
             ;;
         backup)
             cmd_backup "$@"
+            ;;
+        restore)
+            cmd_restore "$@"
             ;;
         _remove)
             cmd_remove "$@"
