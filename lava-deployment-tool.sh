@@ -893,9 +893,6 @@ cmd_restore() {
     # Load database configuration
     . $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/default_database.conf
 
-    set -e
-    set -x
-
     # Substitute missing defaults for IP-based connection this works around a bug
     # in postgresql configuration on default Ubuntu installs and allows us to use
     # the ~/.pgpass file.
@@ -907,9 +904,12 @@ cmd_restore() {
         return
     fi
 
+    set -e
+    set -x
+
     sudo -u postgres dropdb \
         --port $dbport \
-        $LAVA_INSTANCE || true
+        $dbname || true
     sudo -u postgres createdb \
         --encoding=UTF-8 \
         --owner=$dbuser \
@@ -972,6 +972,9 @@ cmd_backup() {
 
     mkdir -p "$destdir"
 
+    set -e
+    set -x
+
     echo "Creating database snapshot..."
     PGPASSWORD=$dbpass pg_dump \
         --no-owner \
@@ -991,6 +994,9 @@ cmd_backup() {
         --file "$destdir/files.tar.gz" \
         .
     #   ^ There is a DOT HERE don't remove it
+
+    set +e
+    set +x
 
     echo "Done"
 }
