@@ -871,11 +871,11 @@ cmd_restore() {
 
     SNAPSHOT_ID=${2}
 
-    if [ -d "$LAVA_PREFIX/backups/$LAVA_INSTANCE/$SNAPSHOT_ID" ]; then
-        SNAPSHOT="$LAVA_PREFIX/backups/$LAVA_INSTANCE/$SNAPSHOT_ID"
+    if [ -d "$LAVA_ROOT/backups/$LAVA_INSTANCE/$SNAPSHOT_ID" ]; then
+        SNAPSHOT="$LAVA_ROOT/backups/$LAVA_INSTANCE/$SNAPSHOT_ID"
     else
-        if [ -d "$LAVA_PREFIX/backups/$SNAPSHOT_ID" ]; then
-            SNAPSHOT="$LAVA_PREFIX/backups/$SNAPSHOT_ID"
+        if [ -d "$LAVA_ROOT/backups/$SNAPSHOT_ID" ]; then
+            SNAPSHOT="$LAVA_ROOT/backups/$SNAPSHOT_ID"
         else
             echo "Cannot find snapshot $SNAPSHOT_ID"
             return
@@ -974,7 +974,7 @@ cmd_backup() {
 
     echo "Making backup with id: $snapshot_id"
 
-    destdir="$LAVA_PREFIX/backups/$LAVA_INSTANCE/$snapshot_id"
+    destdir="$LAVA_ROOT/backups/$LAVA_INSTANCE/$snapshot_id"
 
     mkdir -p "$destdir"
 
