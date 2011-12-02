@@ -959,6 +959,7 @@ cmd_backup() {
         --port=$dbport \
         --username=$dbuser \
         --no-password $dbname \
+        --schema=public \
         > "$destdir/database.dump"
 
     echo "Creating file repository snapshot..."
