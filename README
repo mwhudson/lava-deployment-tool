@@ -108,6 +108,8 @@ instance with a command like:
 
 $ lava-deployment-tool.sh restore $TARGET_INSTANCE $SOURCE_INSTANCE/$SNAPSHOT_ID
 
+You cannot restore to an instance while it is running.
+
 Updating LAVA instance
 ^^^^^^^^^^^^^^^^^^^^^^
 
