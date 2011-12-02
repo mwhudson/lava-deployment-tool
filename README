@@ -103,7 +103,7 @@ will restore the given snapshot of the named instance.  This will
 first erase the database and media files of the named instance, so be
 careful what you type!
 
-You can restore an instance from a backup taked from a distinct
+You can restore an instance from a backup taken from a distinct
 instance with a command like:
 
 $ lava-deployment-tool.sh restore $TARGET_INSTANCE $SOURCE_INSTANCE/$SNAPSHOT_ID
