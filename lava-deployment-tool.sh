@@ -67,6 +67,8 @@ install_fs() {
     # Create basic directory structure
     # Apache site:
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/apache2/sites-available
+    # Dispatcher configuration 
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-dispatcher
     # Dashboard reports
     mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/reports
     # Dashboard data views
