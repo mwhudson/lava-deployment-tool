@@ -432,8 +432,8 @@ install_config_app() {
     # Get out of virtualenv
     deactivate
 
-    echo "Restarting LAVA instance..."
-    sudo start lava-instance LAVA_INSTANCE=$LAVA_INSTANCE
+    echo "Your instance is now ready, please start it with"
+    echo "sudo start lava-instance LAVA_INSTANCE=$LAVA_INSTANCE"
 
     set +e
     set +x
