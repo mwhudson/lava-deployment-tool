@@ -29,7 +29,8 @@ os_check() {
             case `lsb_release -c -s` in
                 lucid)
                     export LAVA_PYTHON=python2.6
-                    export LAVA_SUPPORTED=1
+                    # FIXME: Lucid is not supported
+                    export LAVA_SUPPORTED=0
                     # Required system packages
                     LAVA_PKG_LIST="python-virtualenv git-core build-essential $LAVA_PYTHON-dev libxml2-dev apache2 apache2-dev postgresql rabbitmq-server"
                     ;;
