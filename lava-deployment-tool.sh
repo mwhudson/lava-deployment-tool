@@ -219,11 +219,35 @@ install_user() {
     echo "Creating system user for LAVA instance $LAVA_INSTANCE: $LAVA_SYS_USER"
     sudo useradd --system --comment "$LAVA_SYS_USER_DESC" "$LAVA_SYS_USER"
 }
+
+
+wizard_fs() {
+    echo
+    echo "Filesystem configuration"
+    echo "^^^^^^^^^^^^^^^^^^^^^^^^"
+    echo
+    echo "We need filesystem location for this instance"
+    echo
+    echo "Installation directory: $LAVA_PREFIX/$LAVA_INSTANCE"
+    echo
+    echo "Note: everything apart from the database and message"
+    echo "broker state will be stored there"
+    echo
+    echo "(this is just a notification, it is not configurable)"
+    echo
+    echo "next    - continue"
+
+    read -p "Please decide what to do: " RESPONSE
+
+    case "$RESPONSE" in
+        next)
+            return 0  # loop complete
+    esac
+    return 1  # another loop please
 }
 
 
 install_fs() {
-    LAVA_INSTANCE=$1
     logger "Creating filesystem structure for LAVA instance $LAVA_INSTANCE"
     # Create basic directory structure
     # Apache site:
