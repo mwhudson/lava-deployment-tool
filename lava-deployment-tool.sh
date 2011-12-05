@@ -1089,29 +1089,46 @@ cmd_upgrade() {
 
 
 cmd_remove() {
-    LAVA_INSTANCE=${1:-lava}
+    LAVA_INSTANCE=${1:-dev}
+
+    _banner
 
     # Sanity checking, ensure that instance exists
     if [ \! -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
         echo "Instance $LAVA_INSTANCE does not exist"
         return
     fi
+
+    _load_configuration "$LAVA_INSTANCE"
+
     echo "*** WARNING ***" 
     echo "You are about to IRREVERSIBLY DESTROY the instance $LAVA_INSTANCE"
     echo "There is no automatic backup, there is no way to undo this step"
     echo "*** WARNING ***" 
+
+    echo "We will remove system user $LAVA_SYS_USER"
+    echo "We will remove PostgreSQL database $LAVA_DB_NAME"
+    echo "We will remove PostgreSQL user: $LAVA_DB_USER"
+    echo "We will remove everything in $LAVA_PREFIX/$LAVA_INSTANCE"
+    echo "We will remove the apache site $LAVA_INSTANCE.conf"
     echo
     read -p "Type DESTROY to continue: " RESPONSE
     test "$RESPONSE" = 'DESTROY' || return
 
     logger "Removing LAVA instance $LAVA_INSTANCE"
+
+    set -e
+    set -x
+    # Remove everything 
     sudo stop lava-instance LAVA_INSTANCE=$LAVA_INSTANCE || true
-    sudo rm -f /etc/apache2/sites-available/$LAVA_INSTANCE.conf || true
-    sudo rm -f /etc/apache2/sites-enabled/$LAVA_INSTANCE.conf || true
-    sudo rm -rf $LAVA_PREFIX/$LAVA_INSTANCE || true
-    sudo -u postgres dropdb $LAVA_INSTANCE || true
-    sudo -u postgres dropuser $LAVA_INSTANCE || true
-    sudo userdel $LAVA_INSTANCE || true
+    sudo rm -f "/etc/apache2/sites-available/$LAVA_INSTANCE.conf" || true
+    sudo rm -f "/etc/apache2/sites-enabled/$LAVA_INSTANCE.conf" || true
+    sudo rm -rf "$LAVA_PREFIX/$LAVA_INSTANCE" || true
+    sudo -u postgres dropdb "$LAVA_DB_NAME" || true
+    sudo -u postgres dropuser "$LAVA_DB_USER" || true
+    sudo userdel "$LAVA_SYS_USER" || true
+    set +x
+    set +e
 }
 
 
