@@ -363,20 +363,46 @@ install_venv() {
 }
 
 
+wizard_database() {
+    export LAVA_DB_NAME="lava-$LAVA_INSTANCE"
+    export LAVA_DB_USER="lava-$LAVA_INSTANCE"
+    export LAVA_DB_PASSWORD=$(dd if=/dev/urandom bs=1 count=128 2>/dev/null | md5sum | cut -d ' ' -f 1)
+
+    echo
+    echo "PostgreSQL configuration"
+    echo "^^^^^^^^^^^^^^^^^^^^^^^^"
+    echo
+    echo "We will use PostgreSQL to store application state"
+    echo "(apart from files that are just files in your filesystem)"
+    echo
+    echo "Database name: $LAVA_DB_NAME"
+    echo "Database user: $LAVA_DB_USER"
+    echo "     password: $LAVA_DB_PASSWORD (automatically generated)"
+    echo
+    echo "(this is just a notification, it is not configurable)"
+    echo
+    echo "next    - continue"
+
+    read -p "Please decide what to do: " RESPONSE
+
+    case "$RESPONSE" in
+        next)
+            return 0  # loop complete
+    esac
+    return 1  # another loop please
+}
+
+
 install_database()
 {
-    LAVA_INSTANCE=$1
-
     logger "Creating database configuration for LAVA instance $LAVA_INSTANCE"
-
-    LAVA_PASSWORD=$(dd if=/dev/urandom bs=1 count=128 2>/dev/null | md5sum | cut -d ' ' -f 1)
 
     # Create database configuration file
     cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/default_database.conf <<DEFAULT_DATABASE_CONF
-dbuser='$LAVA_INSTANCE'
-dbpass='$LAVA_PASSWORD'
+dbuser='$LAVA_DB_USER'
+dbpass='$LAVA_DB_PASSWORD'
 basepath=''
-dbname='$LAVA_INSTANCE'
+dbname='$LAVA_DB_NAME'
 dbserver=''
 dbport=''
 dbtype='pgsql'
@@ -390,19 +416,19 @@ DEFAULT_DATABASE_CONF
         --no-superuser \
         --no-createrole \
         --no-password \
-        $LAVA_INSTANCE
+        "$LAVA_DB_USER"
 
     # Set a password for our new user
     sudo -u postgres psql \
         --quiet \
-        --command="ALTER USER \"$LAVA_INSTANCE\" WITH PASSWORD '$LAVA_PASSWORD'"
+        --command="ALTER USER \"$LAVA_DB_USER\" WITH PASSWORD '$LAVA_DB_PASSWORD'"
 
     # Create a database for our new user
     sudo -u postgres createdb \
         --encoding=UTF-8 \
-        --owner=$LAVA_INSTANCE \
+        --owner="$LAVA_DB_USER" \
         --no-password \
-        $LAVA_INSTANCE
+        "$LAVA_DB_NAME"
 
     # Install the database adapter
     logger "Installing database adapter for LAVA instance $LAVA_INSTANCE"
