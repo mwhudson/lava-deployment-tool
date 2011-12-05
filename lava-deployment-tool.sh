@@ -1306,11 +1306,9 @@ main() {
         setup)
             cmd_setup "$@"
             ;;
-        install)
-            set -x
-            set -e
-            LAVA_INSTANCE=$1
-            cmd_install "$@" 2>&1 | tee install-log-for-instance-$LAVA_INSTANCE.log
+        install|upgrade|remove)
+            LAVA_INSTANCE=${1:-dev}
+            cmd_$cmd "$@" 2>&1 | tee "$cmd-log-for-instance-$LAVA_INSTANCE.log"
             ;;
         backup)
             set -x
@@ -1323,20 +1321,6 @@ main() {
             set -x
             set -e
             cmd_restore "$@"
-            set +x
-            set +e
-            ;;
-        _remove)
-            set -x
-            set -e
-            cmd_remove "$@"
-            set +x
-            set +e
-            ;;
-        upgrade)
-            set -x
-            set -e
-            cmd_upgrade "$@"
             set +x
             set +e
             ;;
