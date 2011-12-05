@@ -48,6 +48,29 @@ os_check() {
 }
 
 
+load_meta() {
+    LAVA_INSTANCE=$1
+
+    # Persistent config
+    if [ -e $LAVA_PREFIX/$LAVA_INSTANCE/instance.conf ]; then
+        . $LAVA_PREFIX/$LAVA_INSTANCE/instance.conf
+        # TODO: ensure we have all essential variables or we die verbosely
+    else
+        # Legacy configs, no lava- prefix
+        export LAVA_SYS_USER=$LAVA_INSTANCE
+        export LAVA_DB_USER=$LAVA_INSTANCE
+        export LAVA_DB_NAME=$LAVA_INSTANCE
+        # Single static vhost
+        export LAVA_RABBIT_VHOST=/
+    fi
+
+    export LAVA_SYS_USER
+    export LAVA_DB_USER
+    export LAVA_DB_NAME
+    export LAVA_RABBIT_VHOST
+}
+
+
 install_meta() {
     LAVA_INSTANCE=$1
 
