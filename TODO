@@ -2,6 +2,7 @@ Missing features:
 
  - Migration from installation based on our PPA
  - Setting up rabbitmq vhost
+ - Setting up SSL
 
 Bugs:
  - set -e just does not work, all error checking is broken, darn! (needs testing, got fixed)
