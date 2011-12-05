@@ -813,6 +813,8 @@ instance \$LAVA_INSTANCE
 # Stop and start along with the rest of the instance
 start on starting lava-instance
 stop on stopping lava-instance
+# TODO: make uwsgi compatible with upstart socket activation
+# start on socket PROTO=unix PATH=$LAVA_PREFIX/\$LAVA_INSTANCE/run/uwsgi.sock
 
 # We want each worker to respawn if it gets hurt.
 respawn
