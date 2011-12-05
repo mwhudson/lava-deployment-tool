@@ -18,7 +18,7 @@ LAVA_PYTHON=python2.6
 LAVA_UWSGI=0.9.9.2
 
 # Current version of setup required by lava (global state)
-export LAVA_SETUP_REQUIRED_VERSION=16
+export LAVA_SETUP_REQUIRED_VERSION=17
 
 # Check if this installation is supported
 export LAVA_SUPPORTED=0
