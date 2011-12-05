@@ -18,7 +18,7 @@ LAVA_PYTHON=python2.6
 LAVA_UWSGI=0.9.9.2
 
 # Current version of setup required by lava (global state)
-export LAVA_SETUP_REQUIRED_VERSION=17
+export LAVA_SETUP_REQUIRED_VERSION=18
 
 # Check if this installation is supported
 export LAVA_SUPPORTED=0
@@ -1031,7 +1031,7 @@ script
     export VIRTUAL_ENV=$LAVA_PREFIX/\$LAVA_INSTANCE
     export PATH=\$VIRTUAL_ENV/bin:\$PATH
     # Start LAVA scheduler, it runs as root in this release
-    exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage scheduler --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-scheduler.log --loglevel=info
+    exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage --instance-template=$LAVA_PREFIX/{instance}/etc/lava-server/{{filename}}.conf --instance=\$LAVA_INSTANCE scheduler --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-scheduler.log --loglevel=info
 end script
 LAVA_CONF
 
