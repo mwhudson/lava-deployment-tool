@@ -1327,7 +1327,8 @@ main() {
         install_*)
             set -x
             set -e
-            $cmd "$@"
+            _load_configuration "$@"
+            $cmd
             set +x
             set +e
             ;;
