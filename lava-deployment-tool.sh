@@ -304,9 +304,43 @@ install_fs() {
 }
 
 
-install_venv() {
-    LAVA_INSTANCE=$1
+wizard_venv() {
+    echo
+    echo "Python virtual environment configuration"
+    echo "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+    echo
+    echo "We will use python virtualenv to isolate LAVA code from your system"
+    echo
+    echo "Python version: $LAVA_PYTHON"
+    echo
+    echo "You can interact with this source code (installation) as if it"
+    echo "was globally by invoking the following line:"
+    echo
+    echo "$ . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate"
+    echo
+    echo "(Note that the intent is to source (read) the file, not execute it)"
+    echo "When you are done just type:"
+    echo
+    echo "$ deactivate"
+    echo
+    echo "While inside your virtualenv you can invoke additional commands,"
+    echo "most notably, lava-server manage ..."
+    echo 
+    echo "(this is just a notification, it is not configurable)"
+    echo
+    echo "next    - continue"
 
+    read -p "Please decide what to do: " RESPONSE
+
+    case "$RESPONSE" in
+        next)
+            return 0  # loop complete
+    esac
+    return 1  # another loop please
+}
+
+
+install_venv() {
     logger "Creating virtualenv using $LAVA_PYTHON for LAVA instance $LAVA_INSTANCE"
 
     # Create and enable the virtualenv
