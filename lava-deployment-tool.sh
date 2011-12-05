@@ -1,7 +1,5 @@
 #!/bin/sh
 
-set -e
-
 # Global Configuration
 
 # Where all LAVA stuff is kept, this is meant to make /srv/lava extensible in the future
@@ -95,22 +93,13 @@ INSTANCE_CONF
 
 install_user() {
     LAVA_INSTANCE=$1
-    set -e
-    set -x
-
     logger "Creating system user for LAVA instance $LAVA_INSTANCE"
     sudo useradd --system --comment "User for LAVA Instance" $LAVA_INSTANCE
-
-    set +x
-    set +e
 }
 
 
 install_fs() {
     LAVA_INSTANCE=$1
-    set -e
-    set -x
-
     logger "Creating filesystem structure for LAVA instance $LAVA_INSTANCE"
     # Create basic directory structure
     # Apache site:
@@ -164,17 +153,11 @@ install_fs() {
     # Set the sticky and setgid bits there
     sudo chgrp -R $LAVA_INSTANCE $LAVA_PREFIX/$LAVA_INSTANCE/tmp
     sudo chmod -R g+rwtXs $LAVA_PREFIX/$LAVA_INSTANCE/tmp
-
-    set +e
-    set +x
 }
 
 
 install_venv() {
     LAVA_INSTANCE=$1
-
-    set -e
-    set -x
 
     logger "Creating virtualenv using $LAVA_PYTHON for LAVA instance $LAVA_INSTANCE"
 
@@ -195,18 +178,12 @@ install_venv() {
 
     # Stop using virtualenv
     deactivate
-
-    set +e
-    set +x
 }
 
 
 install_database()
 {
     LAVA_INSTANCE=$1
-
-    set -e
-    set -x
 
     logger "Creating database configuration for LAVA instance $LAVA_INSTANCE"
 
@@ -251,16 +228,11 @@ DEFAULT_DATABASE_CONF
     pip install psycopg2
 
     deactivate
-    set +e
-    set +x
 }
 
 
 install_web_hosting() {
     LAVA_INSTANCE=$1
-    set -e
-    set -x
-
     logger "Installing uWSGI and other hosting parts for LAVA instance $LAVA_INSTANCE"
 
     . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
@@ -381,19 +353,12 @@ UWSGI_INI
     sudo a2ensite $LAVA_INSTANCE.conf
     sudo a2dissite 000-default || true
     sudo service apache2 restart
-
-    set +e
-    set +x
 }
 
 
 install_app() {
     LAVA_INSTANCE=$1
     LAVA_REQUIREMENT=$2
-
-    set -e
-    set -x
-
     . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
     pip install --upgrade --requirement=$LAVA_REQUIREMENT
     deactivate
@@ -448,17 +413,11 @@ SETTINGS_CONF
 SETTINGS_CONF
     fi
 fi
-    set +e
-    set +x
 }
 
 
 install_config_app() {
     LAVA_INSTANCE=$1
-
-    set -e
-    set -x
-
     # Enable virtualenv
     . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
 
@@ -488,14 +447,10 @@ install_config_app() {
 
     echo "Your instance is now ready, please start it with"
     echo "sudo start lava-instance LAVA_INSTANCE=$LAVA_INSTANCE"
-
-    set +e
-    set +x
 }
 
 
 cmd_setup() {
-    set -e
     SETUP_VER=0
     if [ -e $LAVA_PREFIX/.setup ]; then
         SETUP_VER=$(cat $LAVA_PREFIX/.setup)
@@ -503,7 +458,6 @@ cmd_setup() {
 
 
     if [ $SETUP_VER -lt $LAVA_SETUP_REQUIRED_VERSION ]; then
-        set +x
         echo "===================="
         echo "LAVA Deployment Tool"
         echo "===================="
@@ -830,7 +784,6 @@ LAVA_CONF
     else
         echo "This step has been already performed"
     fi
-    set +e
 }
 
 
@@ -899,8 +852,6 @@ cmd_remove() {
     read -p "Type DESTROY to continue: " RESPONSE
     test "$RESPONSE" = 'DESTROY' || return
 
-    set -e
-    set -x
     logger "Removing LAVA instance $LAVA_INSTANCE"
     sudo stop lava-instance LAVA_INSTANCE=$LAVA_INSTANCE || true
     sudo rm -f /etc/apache2/sites-available/$LAVA_INSTANCE.conf || true
@@ -909,8 +860,6 @@ cmd_remove() {
     sudo -u postgres dropdb $LAVA_INSTANCE || true
     sudo -u postgres dropuser $LAVA_INSTANCE || true
     sudo userdel $LAVA_INSTANCE || true
-    set +e
-    set +x
 }
 
 
@@ -964,9 +913,6 @@ cmd_restore() {
         return
     fi
 
-    set -e
-    set -x
-
     # Stop the instance
     sudo stop lava-instance LAVA_INSTANCE=$LAVA_INSTANCE || true
 
@@ -997,9 +943,6 @@ cmd_restore() {
     # Allow instance to write to media directory
     sudo chgrp -R $LAVA_INSTANCE $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
     sudo chmod -R g+rwXs $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
-
-    set +e
-    set +x
 
     echo "Done"
 }
@@ -1035,9 +978,6 @@ cmd_backup() {
 
     mkdir -p "$destdir"
 
-    set -e
-    set -x
-
     echo "Creating database snapshot..."
     PGPASSWORD=$dbpass pg_dump \
         --no-owner \
@@ -1057,9 +997,6 @@ cmd_backup() {
         --file "$destdir/files.tar.gz" \
         .
     #   ^ There is a DOT HERE don't remove it
-
-    set +e
-    set +x
 
     echo "Done"
 }
@@ -1099,22 +1036,44 @@ main() {
             cmd_setup "$@"
             ;;
         install)
+            set -x
+            set -e
             cmd_install "$@"
             ;;
         backup)
+            set -x
+            set -e
             cmd_backup "$@"
+            set +x
+            set +e
             ;;
         restore)
+            set -x
+            set -e
             cmd_restore "$@"
+            set +x
+            set +e
             ;;
         _remove)
+            set -x
+            set -e
             cmd_remove "$@"
+            set +x
+            set +e
             ;;
         upgrade)
+            set -x
+            set -e
             cmd_upgrade "$@"
+            set +x
+            set +e
             ;;
         install_*)
+            set -x
+            set -e
             $cmd "$@"
+            set +x
+            set +e
             ;;
         *)
             echo "Unknown command: $cmd, try help"
