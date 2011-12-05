@@ -573,9 +573,16 @@ UWSGI_INI
 }
 
 
+wizard_app() {
+    echo
+    echo "LAVA application configuration"
+    echo "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+    echo
+    return 0
+}
+
+
 install_app() {
-    LAVA_INSTANCE=$1
-    LAVA_REQUIREMENT=$2
     . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
     pip install --upgrade --requirement=$LAVA_REQUIREMENT
     deactivate
