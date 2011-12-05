@@ -1038,7 +1038,8 @@ main() {
         install)
             set -x
             set -e
-            cmd_install "$@"
+            LAVA_INSTANCE=$1
+            cmd_install "$@" 2>&1 | tee install-log-for-instance-$LAVA_INSTANCE.log
             ;;
         backup)
             set -x
