@@ -640,8 +640,15 @@ fi
 }
 
 
+wizard_config_app() {
+    echo "Post-installation actions"
+    echo "^^^^^^^^^^^^^^^^^^^^^^^^^"
+    echo
+    return 0
+}
+
+
 install_config_app() {
-    LAVA_INSTANCE=$1
     # Enable virtualenv
     . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
 
