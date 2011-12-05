@@ -418,16 +418,25 @@ install_config_app() {
     . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
 
     echo "Building cache of static files..."
-    lava-server manage build_static --noinput --link
+    lava-server manage \
+        --instance-template=$LAVA_ROOT/instances/{instance}/etc/lava-server/{{filename}}.conf \
+        --instance=$LAVA_INSTANCE \
+        build_static --noinput --link
 
     echo "Stopping instance for database changes..."
     sudo stop lava-instance LAVA_INSTANCE=$LAVA_INSTANCE || true # in case of upgrades
 
     echo "Synchronizing database..."
-    lava-server manage syncdb --noinput
+    lava-server manage \
+        --instance-template=$LAVA_ROOT/instances/{instance}/etc/lava-server/{{filename}}.conf \
+        --instance=$LAVA_INSTANCE \
+        syncdb --noinput
 
     echo "Running migrations..."
-    lava-server manage migrate --noinput
+    lava-server manage \
+        --instance-template=$LAVA_ROOT/instances/{instance}/etc/lava-server/{{filename}}.conf \
+        --instance=$LAVA_INSTANCE \
+        migrate --noinput
 
     # Get out of virtualenv
     deactivate
