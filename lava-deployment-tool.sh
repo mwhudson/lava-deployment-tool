@@ -800,13 +800,13 @@ cmd_install() {
         echo "Instance $LAVA_INSTANCE already exists"
         return
     fi
-    install_user $LAVA_INSTANCE || die "Unable to create instance user"
-    install_fs $LAVA_INSTANCE || die "Unable to create basic filesystem structure" 
-    install_venv $LAVA_INSTANCE || die "Unable to create virtualenv"
-    install_database $LAVA_INSTANCE || die "Unable to create database"
-    install_web_hosting $LAVA_INSTANCE || die "Unable to create web hosting"
-    install_app $LAVA_INSTANCE $LAVA_REQUIREMENT || die "Unable to create application"
-    install_config_app $LAVA_INSTANCE || die "Unable to run application postinstall actions"
+    install_user $LAVA_INSTANCE
+    install_fs $LAVA_INSTANCE
+    install_venv $LAVA_INSTANCE
+    install_database $LAVA_INSTANCE
+    install_web_hosting $LAVA_INSTANCE
+    install_app $LAVA_INSTANCE $LAVA_REQUIREMENT
+    install_config_app $LAVA_INSTANCE
 }
 
 
@@ -824,8 +824,8 @@ cmd_upgrade() {
         echo "Instance $LAVA_INSTANCE does not exist"
         return
     fi
-    install_app $LAVA_INSTANCE $LAVA_REQUIREMENT || die "Unable to update application"
-    install_config_app $LAVA_INSTANCE || die "Unable to run application postinstall actions"
+    install_app $LAVA_INSTANCE $LAVA_REQUIREMENT
+    install_config_app $LAVA_INSTANCE
 }
 
 
