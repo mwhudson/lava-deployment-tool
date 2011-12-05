@@ -419,25 +419,27 @@ DEFAULT_DATABASE_CONF
         --no-superuser \
         --no-createrole \
         --no-password \
-        "$LAVA_DB_USER"
+        "$LAVA_DB_USER" \
+        || die "Failed to create database user"
 
     # Set a password for our new user
     sudo -u postgres psql \
         --quiet \
-        --command="ALTER USER \"$LAVA_DB_USER\" WITH PASSWORD '$LAVA_DB_PASSWORD'"
+        --command="ALTER USER \"$LAVA_DB_USER\" WITH PASSWORD '$LAVA_DB_PASSWORD'" \
+        || die "Failed to set database password"
 
     # Create a database for our new user
     sudo -u postgres createdb \
         --encoding=UTF-8 \
         --owner="$LAVA_DB_USER" \
         --no-password \
-        "$LAVA_DB_NAME"
+        "$LAVA_DB_NAME" \
+        || die "Failed to create a database"
 
     # Install the database adapter
     logger "Installing database adapter for LAVA instance $LAVA_INSTANCE"
     . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
-    pip install psycopg2
-
+    pip install psycopg2 || die "Failed to install psycopg2"
     deactivate
 }
 
@@ -589,7 +591,7 @@ wizard_app() {
 
 install_app() {
     . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
-    pip install --upgrade --requirement=$LAVA_REQUIREMENT
+    pip install --upgrade --requirement=$LAVA_REQUIREMENT || die "Failed to install application"
     deactivate
 
     if [ ! -e $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/settings.conf ]; then
