@@ -255,27 +255,27 @@ install_fs() {
     sudo chgrp -R www-data $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/
     sudo chmod -R g+rXs $LAVA_PREFIX/$LAVA_INSTANCE/var/www/lava-server/
     # Allow instance user to read all lava-server settings
-    sudo chgrp -R $LAVA_INSTANCE $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server
+    sudo chgrp -R $LAVA_SYS_USER $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server
     sudo chmod -R g+rXs $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/
     # Allow instance to write to media directory
-    sudo chgrp -R $LAVA_INSTANCE $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
+    sudo chgrp -R $LAVA_SYS_USER $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
     sudo chmod -R g+rwXs $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
     # Prevent anyone else from reading from the media directory
     sudo chmod -R o-rX $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/
     # Allow instance to store lava-celery state 
-    sudo chgrp -R $LAVA_INSTANCE $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-celery/
+    sudo chgrp -R $LAVA_SYS_USER $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-celery/
     sudo chmod -R g+rwXs $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-celery/
     # Allow instance user to put stuff in runtime directory
     # and allow www-data to read from that directory
-    sudo chown -R $LAVA_INSTANCE:www-data $LAVA_PREFIX/$LAVA_INSTANCE/run
+    sudo chown -R $LAVA_SYS_USER:www-data $LAVA_PREFIX/$LAVA_INSTANCE/run
     sudo chmod -R g+rXs $LAVA_PREFIX/$LAVA_INSTANCE/run
     # Allow instance to log stuff to log directory
     # Allow users in the adm group to read those logs
-    sudo chown -R $LAVA_INSTANCE:adm $LAVA_PREFIX/$LAVA_INSTANCE/var/log
+    sudo chown -R $LAVA_SYS_USER:adm $LAVA_PREFIX/$LAVA_INSTANCE/var/log
     sudo chmod -R g+rXs $LAVA_PREFIX/$LAVA_INSTANCE/var/log
     # Allow instance user to put stuff in temporary directory
     # Set the sticky and setgid bits there
-    sudo chgrp -R $LAVA_INSTANCE $LAVA_PREFIX/$LAVA_INSTANCE/tmp
+    sudo chgrp -R $LAVA_SYS_USER $LAVA_PREFIX/$LAVA_INSTANCE/tmp
     sudo chmod -R g+rwtXs $LAVA_PREFIX/$LAVA_INSTANCE/tmp
 }
 
