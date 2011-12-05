@@ -1022,10 +1022,14 @@ post-stop script
     logger "LAVA instance (\$LAVA_INSTANCE) scheduler stopped"
 end script
 
-# Run lava scheduler 
 script
-. $LAVA_PREFIX/\$LAVA_INSTANCE/bin/activate
-exec sudo -u \$LAVA_INSTANCE VIRTUAL_ENV=\$VIRTUAL_ENV PATH=\$PATH $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage scheduler --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-scheduler.log --loglevel=info
+    # Load instance settings
+    . $LAVA_PREFIX/\$LAVA_INSTANCE/instance.conf
+    # Simluate virtualenv without spawing anything
+    export VIRTUAL_ENV=$LAVA_PREFIX/\$LAVA_INSTANCE
+    export PATH=\$VIRTUAL_ENV/bin:\$PATH
+    # Start LAVA scheduler, it runs as root in this release
+    exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/lava-server manage scheduler --logfile=$LAVA_PREFIX/\$LAVA_INSTANCE/var/log/lava-scheduler.log --loglevel=info
 end script
 LAVA_CONF
 
