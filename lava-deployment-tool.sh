@@ -818,7 +818,13 @@ respawn
 
 # Announce activity 
 pre-start script
-    logger "LAVA instance (\$LAVA_INSTANCE) uWSGI starting..."
+    # Don't start unless the instance configuration file is present
+    if [ ! -e $LAVA_PREFIX/\$LAVA_INSTANCE/instance.conf ]; then
+        stop
+    else
+        # Announce uWSGI becoming online
+        logger "LAVA instance (\$LAVA_INSTANCE) uWSGI starting..."
+    fi 
 end script
 
 post-start script
