@@ -755,9 +755,10 @@ start on starting lava
 task
 
 script
-    for dir in \`ls /srv/lava/\`; do
+    for dir in \`ls /srv/lava/instances\`; do
         LAVA_INSTANCE=\`basename \$dir\`
-        if [ -e $LAVA_PREFIX/\$LAVA_INSTANCE/etc/lava-server/enabled ]; then
+# TODO: Check if the instance should start automatically on boot
+        if [ -e $LAVA_PREFIX/\$LAVA_INSTANCE/instance.conf ]; then
             start lava-instance LAVA_INSTANCE=\$LAVA_INSTANCE
         fi 
     done
