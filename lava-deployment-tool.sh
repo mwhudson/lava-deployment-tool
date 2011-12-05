@@ -23,6 +23,9 @@ export LAVA_SETUP_REQUIRED_VERSION=16
 # Check if this installation is supported
 export LAVA_SUPPORTED=0
 
+# Installation and configuration steps (all the wizard_xxx install_xxx functions)
+LAVA_INSTALL_STEPS="user fs venv database web_hosting app config_app"
+
 
 os_check() {
     case `lsb_release -i -s` in
