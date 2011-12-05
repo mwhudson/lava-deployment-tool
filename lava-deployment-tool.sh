@@ -863,8 +863,9 @@ description "LAVA Celery worker"
 instance \$LAVA_INSTANCE
 
 # Stop and start along with the rest of the instance
-start on starting lava-instance
-stop on stopping lava-instance
+# start on starting lava-instance
+# stop on stopping lava-instance
+# FIXME: upstart + virtualenv + pid tracking + sudo is broken, needs attention, celery is not part of this release
 
 # Respawn the worker if it got hurt
 respawn
@@ -909,8 +910,9 @@ description "LAVA Celery Scheduler"
 instance \$LAVA_INSTANCE
 
 # Stop and start along with the rest of the instance
-start on starting lava-instance
-stop on stopping lava-instance
+# start on starting lava-instance
+# stop on stopping lava-instance
+# FIXME: upstart + virtualenv + pid tracking + sudo is broken, needs attention, celery is not part of this release
 
 # Respawn the worker if it got hurt
 respawn
@@ -949,8 +951,9 @@ description "LAVA Celery Camera (worker snapshot service)"
 instance \$LAVA_INSTANCE
 
 # Stop and start along with the rest of the instance
-start on starting lava-instance
-stop on stopping lava-instance
+# start on starting lava-instance
+# stop on stopping lava-instance
+# FIXME: upstart + virtualenv + pid tracking + sudo is broken, needs attention, celery is not part of this release
 
 # Respawn the worker if it got hurt
 respawn

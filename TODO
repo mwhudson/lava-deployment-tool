@@ -1,9 +1,9 @@
 Missing features:
-
  - Migration from installation based on our PPA
  - Setting up rabbitmq vhost
  - Setting up SSL
 
 Bugs:
+ - upstart scripts for celery are broken
  - set -e just does not work, all error checking is broken, darn! (needs testing, got fixed)
  - does not work very well on lucid due to upstart (missing features)
