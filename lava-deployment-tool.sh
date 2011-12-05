@@ -1036,45 +1036,55 @@ _banner() {
 
 
 cmd_install() {
-    LAVA_INSTANCE=${1:-lava}
-    LAVA_REQUIREMENT=${2:-requirements.txt}
+    LAVA_INSTANCE=${1:-dev}
+    LAVA_REQUIREMENT=${2:-requirements-trunk.txt}
 
-    if [ \! -e $LAVA_REQUIREMENT ]; then
-        wget $LAVA_REQUIREMENT -O remote-requirements.txt || die "Unable to download $LAVA_REQUIREMENT" 
-        LAVA_REQUIREMENT=remote-requirements.txt
-    fi
+    _banner
 
     # Sanity checking, ensure that instance does not exist yet
     if [ -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
         echo "Instance $LAVA_INSTANCE already exists"
         return
     fi
-    install_user $LAVA_INSTANCE
-    install_fs $LAVA_INSTANCE
-    install_venv $LAVA_INSTANCE
-    install_database $LAVA_INSTANCE
-    install_web_hosting $LAVA_INSTANCE
-    install_app $LAVA_INSTANCE $LAVA_REQUIREMENT
-    install_config_app $LAVA_INSTANCE
-}
-
-
-cmd_upgrade() {
-    LAVA_INSTANCE=${1:-lava}
-    LAVA_REQUIREMENT=${2:-requirements.txt}
 
     if [ \! -e $LAVA_REQUIREMENT ]; then
+        echo "Attempting to download remote requirement file: $LAVA_REQUIREMENT"
         wget $LAVA_REQUIREMENT -O remote-requirements.txt || die "Unable to download $LAVA_REQUIREMENT" 
         LAVA_REQUIREMENT=remote-requirements.txt
     fi
 
-    # Sanity checking, ensure that instance does not exist yet
+    # Configure everything first (get all the answers)
+    _configure "$LAVA_INSTANCE" "$LAVA_REQUIREMENT"
+    set -e
+    set -x
+    # Roll the installation
+    _install
+    set +x
+    set +e
+}
+
+
+cmd_upgrade() {
+    LAVA_INSTANCE=${1:-dev}
+    LAVA_REQUIREMENT=${2:-requirements-trunk.txt}
+
+    _banner
+
+    # Sanity checking, ensure that instance exist
     if [ \! -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
         echo "Instance $LAVA_INSTANCE does not exist"
         return
     fi
-    install_app $LAVA_INSTANCE $LAVA_REQUIREMENT
-    install_config_app $LAVA_INSTANCE
+
+    if [ \! -e $LAVA_REQUIREMENT ]; then
+        echo "Attempting to download remote requirement file: $LAVA_REQUIREMENT"
+        wget $LAVA_REQUIREMENT -O remote-requirements.txt || die "Unable to download $LAVA_REQUIREMENT" 
+        LAVA_REQUIREMENT=remote-requirements.txt
+    fi
+
+    _load_configuration "$LAVA_INSTANCE"
+    install_app
+    install_config_app
 }
 
 
