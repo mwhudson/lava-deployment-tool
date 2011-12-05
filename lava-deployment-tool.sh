@@ -439,8 +439,18 @@ DEFAULT_DATABASE_CONF
 }
 
 
+wizard_web_hosting() {
+    export LAVA_APACHE_VHOST=$(hostname)
+
+    echo
+    echo "Apache and uWSGI configuration"
+    echo "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+    echo
+    return 0
+}
+
+
 install_web_hosting() {
-    LAVA_INSTANCE=$1
     logger "Installing uWSGI and other hosting parts for LAVA instance $LAVA_INSTANCE"
 
     . $LAVA_PREFIX/$LAVA_INSTANCE/bin/activate
@@ -506,8 +516,7 @@ INSTANCE_WSGI
     cat >$LAVA_PREFIX/$LAVA_INSTANCE/etc/apache2/sites-available/lava-server.conf <<INSTANCE_SITE
 <VirtualHost *:80>
     ServerAdmin webmaster@localhost
-    # FIXME: This place needs your help, you should give each instance a custom server name
-    ServerName `hostname`
+    ServerName $LAVA_APACHE_VHOST
 
     # Allow serving media, static and other custom files
     <Directory $LAVA_PREFIX/$LAVA_INSTANCE/var/www>
