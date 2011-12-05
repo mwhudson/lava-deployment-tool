@@ -178,10 +178,47 @@ _install() {
 }
 
 
+wizard_user() {
+    export LAVA_SYS_USER_DESC="User for LAVA instance $LAVA_INSTANCE"
+
+    echo
+    echo "User account configuration"
+    echo "^^^^^^^^^^^^^^^^^^^^^^^^^^"
+    echo
+    echo "We need to create a system user for this instance:"
+    echo "System user account configuration"
+    echo
+    echo "User name:        '$LAVA_SYS_USER'"
+    echo "User description: '$LAVA_SYS_USER_DESC'"
+    echo
+    echo "next   - Use the user name as is"
+    echo "edit   - Edit the user name"
+
+    read -p "Please please decide what to do: " RESPONSE
+
+    case "$RESPONSE" in
+        next)
+            return 0  # loop complete
+            ;;
+        edit)
+            read -p "New user name: " LAVA_SYS_USER_NEW
+            if test -n "$LAVA_SYS_USER_NEW" && echo "$LAVA_SYS_USER_NEW" | grep -q -E -e '[a-z]+[-a-z0-9]*'; then
+                echo "New user name is '$LAVA_SYS_USER_NEW'"
+                LAVA_SYS_USER="$LAVA_SYS_USER_NEW" 
+            else
+                echo "Incorrect user name. It must be a simple ascii identifier"
+            fi
+            ;;
+    esac
+    return 1  # another loop please
+}
+
+
 install_user() {
-    LAVA_INSTANCE=$1
-    logger "Creating system user for LAVA instance $LAVA_INSTANCE"
-    sudo useradd --system --comment "User for LAVA Instance" $LAVA_INSTANCE
+    logger "Creating system user for LAVA instance $LAVA_INSTANCE: $LAVA_SYS_USER"
+    echo "Creating system user for LAVA instance $LAVA_INSTANCE: $LAVA_SYS_USER"
+    sudo useradd --system --comment "$LAVA_SYS_USER_DESC" "$LAVA_SYS_USER"
+}
 }
 
 
