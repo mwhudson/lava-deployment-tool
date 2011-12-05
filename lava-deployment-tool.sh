@@ -46,7 +46,7 @@ os_check() {
 }
 
 
-load_meta() {
+_load_configuration() {
     LAVA_INSTANCE=$1
 
     # Persistent config
@@ -69,25 +69,112 @@ load_meta() {
 }
 
 
-install_meta() {
-    LAVA_INSTANCE=$1
-
-    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/
-
-    # Defaults
-    LAVA_SYS_USER=lava-$LAVA_INSTANCE
-    LAVA_DB_USER=lava-$LAVA_INSTANCE
-    LAVA_DB_NAME=lava-$LAVA_INSTANCE
-    LAVA_RABBIT_VHOST=/lava-$LAVA_INSTANCE
-
-    cat >$LAVA_PREFIX/$LAVA_INSTANCE/instance.conf <<INSTANCE_CONF
+_show_config() {
+    cat <<INSTANCE_CONF
+# Installation prefix
 LAVA_PREFIX='$LAVA_PREFIX'
+# Instance name
 LAVA_INSTANCE='$LAVA_INSTANCE'
+# System configuration (Unix-level)
 LAVA_SYS_USER='$LAVA_SYS_USER'
-LAVA_DB_USER='$LAVA_DB_USER'
+# Apache configuration
+LAVA_APACHE_VHOST='$LAVA_APACHE_VHOST'
+# PostgreSQL configuration
 LAVA_DB_NAME='$LAVA_DB_NAME'
+LAVA_DB_USER='$LAVA_DB_USER'
+LAVA_DB_PASSWORD='$LAVA_DB_PASSWORD'
+# RabbitMQ configuration
 LAVA_RABBIT_VHOST='$LAVA_RABBIT_VHOST'
+LAVA_RABBIT_USER='$LAVA_RABBIT_USER'
+LAVA_RABBIT_PASSWORD='$LAVA_RABBIT_PASSWORD'
 INSTANCE_CONF
+}
+
+
+_save_config() {
+    mkdir -p $LAVA_PREFIX/$LAVA_INSTANCE/
+    cat >$LAVA_PREFIX/$LAVA_INSTANCE/instance.conf <<INSTANCE_CONF
+# Installation prefix
+LAVA_PREFIX='$LAVA_PREFIX'
+# Instance name
+LAVA_INSTANCE='$LAVA_INSTANCE'
+# System configuration (Unix-level)
+LAVA_SYS_USER='$LAVA_SYS_USER'
+# Apache configuration
+LAVA_APACHE_VHOST='$LAVA_APACHE_VHOST'
+# PostgreSQL configuration
+LAVA_DB_NAME='$LAVA_DB_NAME'
+LAVA_DB_USER='$LAVA_DB_USER'
+LAVA_DB_PASSWORD='$LAVA_DB_PASSWORD'
+# RabbitMQ configuration
+LAVA_RABBIT_VHOST='$LAVA_RABBIT_VHOST'
+LAVA_RABBIT_USER='$LAVA_RABBIT_USER'
+LAVA_RABBIT_PASSWORD='$LAVA_RABBIT_PASSWORD'
+INSTANCE_CONF
+}
+
+
+
+_configure() {
+    set +x
+    export LAVA_INSTANCE="$1"
+    export LAVA_REQUIREMENT="$2"
+    # Defaults
+    export LAVA_SYS_USER=lava-$LAVA_INSTANCE
+    export LAVA_DB_USER=lava-$LAVA_INSTANCE
+    export LAVA_DB_NAME=lava-$LAVA_INSTANCE
+    export LAVA_RABBIT_VHOST=/lava-$LAVA_INSTANCE
+    # Wizard loop
+    while true; do
+        echo "Instance Configuration"
+        echo "----------------------"
+        echo
+        echo "Before configuring your instance we need to ask you a few questions"
+        echo "The defaults are safe so feel free to use them without any changes"
+        # Wizard page loop
+        num_steps=1
+        for install_step in $LAVA_INSTALL_STEPS; do
+            while true; do
+                echo
+                echo "Note: it is safe to CTRL-C at this stage!"
+                wizard_$install_step && break
+            done
+        done
+        echo
+        echo "Configuration summary"
+        echo "---------------------"
+        echo
+        _show_config
+        echo
+        # Response loop
+        while true; do
+            echo "(it is safe to CTRL-C at this stage!)"
+            read -p "Is everything okay? (yes|no) " RESPONSE
+            case "$RESPONSE" in
+                yes|no)
+                    break
+                    ;;
+            esac
+        done
+        if [ "$RESPONSE" = "yes" ]; then
+            echo "Saving configuration"
+            _save_config
+            echo "Configuration done"
+            break
+        else
+            echo "Going back to wizard"
+            continue
+        fi
+    done
+    set -x
+}
+
+_install() {
+    for install_step in $LAVA_INSTALL_STEPS; do 
+        echo "Running installation step $install_step"
+        install_$install_step || die "Failed at $install_step"
+    done
+    echo "All installation is done"
 }
 
 
