@@ -568,6 +568,8 @@ logto = $LAVA_PREFIX/$LAVA_INSTANCE/var/log/lava-uwsgi.log
 log-master = true
 auto-procname = true
 touch-reload = $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/uwsgi.reload
+gid = $LAVA_SYS_USER
+uid = $LAVA_SYS_USER
 UWSGI_INI
 
     sudo a2ensite $LAVA_INSTANCE.conf
@@ -838,8 +840,13 @@ kill signal SIGQUIT
 
 # Run uWSGI with instance specific configuration file
 script
-. $LAVA_PREFIX/\$LAVA_INSTANCE/bin/activate
-exec sudo -u \$LAVA_INSTANCE VIRTUAL_ENV=\$VIRTUAL_ENV PATH=\$PATH $LAVA_PREFIX/\$LAVA_INSTANCE/bin/uwsgi --ini=$LAVA_PREFIX/\$LAVA_INSTANCE/etc/lava-server/uwsgi.ini
+    # Load instance settings
+    . $LAVA_PREFIX/\$LAVA_INSTANCE/instance.conf
+    # Simluate virtualenv without spawing anything
+    export VIRTUAL_ENV=$LAVA_PREFIX/\$LAVA_INSTANCE
+    export PATH=\$VIRTUAL_ENV/bin:\$PATH
+    # Start uwsgi, no forks, no daemons, gid/uid changing is managed by uwsgi
+    exec $LAVA_PREFIX/\$LAVA_INSTANCE/bin/uwsgi --ini=$LAVA_PREFIX/\$LAVA_INSTANCE/etc/lava-server/uwsgi.ini
 end script
 LAVA_CONF
 
