@@ -947,6 +947,7 @@ cmd_restore() {
     echo "Done"
 }
 
+
 cmd_backup() {
     LAVA_INSTANCE=${1:-lava}
 
@@ -1000,6 +1001,7 @@ cmd_backup() {
 
     echo "Done"
 }
+
 
 main() {
     os_check
