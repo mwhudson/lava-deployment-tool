@@ -1027,6 +1027,14 @@ die() {
 }
 
 
+_banner() {
+    echo "===================="
+    echo "LAVA Deployment Tool"
+    echo "===================="
+    echo
+}
+
+
 cmd_install() {
     LAVA_INSTANCE=${1:-lava}
     LAVA_REQUIREMENT=${2:-requirements.txt}
