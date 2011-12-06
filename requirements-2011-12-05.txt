@@ -13,7 +13,7 @@ django-staticfiles==0.3.4
 docutils==0.8.1
 keyring==0.6.2
 lava-dashboard==0.10
-lava-kernel-ci-views==0.3.1
+lava-kernel-ci-views==0.3.2
 lava-scheduler==0.6
 lava-server==0.8.2
 lava-tool==0.2
