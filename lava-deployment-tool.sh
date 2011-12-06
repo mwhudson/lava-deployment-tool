@@ -1251,6 +1251,8 @@ cmd_restore() {
 cmd_backup() {
     LAVA_INSTANCE=${1:-lava}
 
+    set -e
+
     # Sanity checking, ensure that instance exists
     if [ \! -d "$LAVA_PREFIX/$LAVA_INSTANCE" ]; then
         echo "Instance $LAVA_INSTANCE does not exist"
@@ -1266,6 +1268,10 @@ cmd_backup() {
     test -z "$dbserver" && dbserver=localhost
     test -z "$dbport" && dbport=5432
 
+    export PGPASSWORD=$dbpass
+
+    set -x
+
     snapshot_id=$(TZ=UTC date +%Y-%m-%dT%H-%M-%SZ)
 
     echo "Making backup with id: $snapshot_id"
@@ -1275,7 +1281,8 @@ cmd_backup() {
     mkdir -p "$destdir"
 
     echo "Creating database snapshot..."
-    PGPASSWORD=$dbpass pg_dump \
+
+    pg_dump \
         --no-owner \
         --format=custom \
         --host=$dbserver \
@@ -1338,11 +1345,7 @@ main() {
             cmd_$cmd "$@" 2>&1 | tee "$cmd-log-for-instance-$LAVA_INSTANCE.log"
             ;;
         backup)
-            set -x
-            set -e
             cmd_backup "$@"
-            set +x
-            set +e
             ;;
         restore)
             set -x
