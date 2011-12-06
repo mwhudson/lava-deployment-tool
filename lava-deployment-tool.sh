@@ -1257,11 +1257,6 @@ cmd_backup() {
         return
     fi
 
-    echo "Are you sure you want to backup instance $LAVA_INSTANCE"
-    echo
-    read -p "Type BACKUP to continue: " RESPONSE
-    test "$RESPONSE" = 'BACKUP' || return
-
     # Load database configuration
     . $LAVA_PREFIX/$LAVA_INSTANCE/etc/lava-server/default_database.conf
 
