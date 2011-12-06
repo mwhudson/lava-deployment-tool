@@ -1288,6 +1288,7 @@ cmd_backup() {
     echo "Creating file repository snapshot..."
     tar \
         --create \
+        --ignore-failed-reads \
         --gzip \
         --directory $LAVA_PREFIX/$LAVA_INSTANCE/var/lib/lava-server/ \
         --file "$destdir/files.tar.gz" \
